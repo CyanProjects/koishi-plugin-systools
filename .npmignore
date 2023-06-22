@@ -1,0 +1,8 @@
+.DS_Store
+tsconfig.tsbuildinfo
+.devTools
+
+*.disable
+*.disabled
+
+push.bat

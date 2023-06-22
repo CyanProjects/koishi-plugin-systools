@@ -1,0 +1,15 @@
+{
+    "zh-CN": {
+        "config": {
+            "execTimeout": {
+                "description": "运行 exec 指令的最大超时时间(ms)"
+            },
+            "axiosTimeout": {
+                "description": "axios 网络请求的最大超时时间(ms)"
+            }
+        },
+        "usage": {
+            
+        }
+    }
+}

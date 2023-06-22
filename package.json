@@ -1,0 +1,55 @@
+{
+    "name": "koishi-plugin-systools",
+    "description": "系统助手 - 支持运行系统命令、查询系统状态、关机系统或框架和查询 IP 地址",
+    "version": "0.1.1145a",
+    "main": "lib/index.js",
+    "typings": "lib/index.d.ts",
+    "files": [
+        "lib",
+        "dist",
+        "changes.md"
+    ],
+    "license": "GPL3.0",
+    "scripts": {
+        "test": "src\\index.ts"
+    },
+    "author": "爱喝牛奶の涛哥",
+    "keywords": [
+        "chatbot",
+        "koishi",
+        "plugin",
+        "systools"
+    ],
+    "peerDependencies": {
+        "koishi": "^4.11.6"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zhuhansan666/koishi-plugin-systools.git"
+    },
+    "dependencies": {
+        "@koishijs/plugin-console": "^5.11.0",
+        "axios": "^1.4.0",
+        "dayjs": "latest",
+        "koishi-plugin-k-report": "latest",
+        "node-machine-id": "latest"
+    },
+    "koishi": {
+        "description": {
+            "zh": "系统助手 - 支持运行系统命令、查询系统状态、关机系统或框架和查询 IP 地址",
+            "en": "Systools - Run system command, get system information, shutdown your device or get your ip address."
+        },
+        "service": {
+            "required.disabled": [
+                "kreport"
+            ]
+        },
+        "locales": [
+            "zh",
+            "en"
+        ]
+    },
+    "devDependencies": {
+        "@koishijs/client": "^5.11.0"
+    }
+}

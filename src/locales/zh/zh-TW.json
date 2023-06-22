@@ -1,0 +1,54 @@
+{
+    "name": "ZH-TW",
+    "tips": {
+        "empty": "命令語法不正確: {0} 引數為空"
+    },
+    "commands": {
+        "ping": {
+            "description": "systools: 呼叫網路API 查詢指定可PING域名或IP的網站資訊",
+            "usage": "ping <網址>",
+            "examples": "ping bilibili.com",
+            "pinging": "正在ping {0}, 這可能需要幾秒鐘...",
+            "failed": "嘗試ping發生問題: {0}",
+            "success": "ping 資訊返回\n網址: {0}\nIP: {1}\n延時(最小/最大): {2}/{3}\n網站歸屬地: {4}\nAPI請求節點: {5}",
+            "CNAPIFailed": "使用中國大陸API ping失敗, 正在嘗試使用國際API"
+        },
+        "cmd": {
+            "description": "systools: 執行系統命令 (不支援上下文)",
+            "usage": "cmd <系統命令>",
+            "examples": "cmd ipconfig\ncmd ifconfig",
+            "start": "開始執行 {0}\n請不要關閉計算機",
+            "failed": "命令執行錯誤:\n{0}\n共耗時 {1} 毫秒",
+            "success": "命令執行成功:\n{0}\n共耗時 {1} 毫秒",
+            "timeout": "命令執行超時: 共耗時 {0} 毫秒"
+        },
+        "sysinfo": {
+            "description": "systools: 獲取系統資訊",
+            "usage": "sysinfo",
+            "examples": "sysinfo",
+            "success": "系統資訊\n\nKService 裝置唯一識別碼: {0}\n主機名稱: {1}\n工作目錄: {2}\n系統版本號: {3}\n機帶RAM(使用/空閒/已裝載): {4}GiB / {5}GiB / {6}GiB\n處理器:\n\t名稱: {7}\n\t匯流排程數: {8}\n使用者資訊:\n\t名稱: {10}\n\t使用者目錄: {11}\n\t預設終端(Windows下不支援獲取): {12}\n\n系統已執行 {9} 小時"
+        },
+        "shutdown": {
+            "description": "(非Windows下實驗性) systools: 對系統進行關機操作(謹慎使用)",
+            "usage": "shutdown",
+            "examples": "shutdown",
+            "undefinedUserId": "錯誤: UserId獲取失敗, 請重試",
+            "first": "警告: 該操作將會直接應用於您的計算機, 請在 {0} 內輸入 \"shutdown\" 以確認是否需要關機",
+            "delete": "提示: 請求已超時刪除.",
+            "shutdown": "確認成功\n即將關機, 請稍後...\n正在退出Koishi...",
+            "exited": "koishi已退出."
+        },
+        "ip": {
+            "description": "systools: 獲取本機網際網路 IP 地址",
+            "usage": "ip",
+            "examples": "ip",
+            "failed": "IP 獲取失敗{0}",
+            "notPrivate": "配置項 ipPublic 決定了您在當前會話中該指令不可用. 更多詳情, 請參閱 systools 配置項 ipPublic"
+        }
+    },
+    "hooker": {
+        "hookerError": "糟糕! hooker 錯誤, 為避免出現問題, 已結束執行",
+        "errorWithReported": "對不起, 我們的外挂程式遇到了些問題 :(\nKService 裝置唯一識別碼: {0}\n執行時錯誤: {1}\n已上報成功",
+        "errorWithoutReported": "對不起, 我們的外挂程式遇到了些問題 :(\nKService 裝置唯一識別碼: {0}\n執行時錯誤: {1}\n且上報錯誤: {2}"
+    }
+}

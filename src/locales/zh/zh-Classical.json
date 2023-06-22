@@ -1,0 +1,54 @@
+{
+    "name": "ZH-Classical",
+    "tips": {
+        "empty": "命语法：“{0} 参合为空。”"
+    },
+    "commands": {
+        "ping": {
+            "description": "systools: 调以网络六十五万之门，按询为门外痛标或师门开之目",
+            "usage": "ping <网址>",
+            "examples": "ping bilibili.com",
+            "pinging": "正在乐水 {0}，须数秒",
+            "failed": "尝试乐兮？ {0}",
+            "success": "ping 信息还至\n网址: {0}\n者，权之者也: {1}\n延时（至）: {2}/{3}\n网巾立属地: {4}\n巧笑之目而请节次: {5}",
+            "CNAPIFailed": "使中国大陆懈怠，唯试一国际屠沽门外"
+        },
+        "cmd": {
+            "description": "systools: 行系统命（不之文）",
+            "usage": "cmd <系统命>",
+            "examples": "cmd ipconfig\ncmd ifconfig",
+            "start": "始行其始 {0}\n请勿闭其计",
+            "failed": "令行其过:\n{0}\n凡用功则 {1} 无私秒",
+            "success": "命行成其功:\n{0}\n凡用功则 {1} 无私秒",
+            "timeout": "命超时: 凡用功则 {0} 无私秒"
+        },
+        "sysinfo": {
+            "description": "systools: 取系统信息",
+            "usage": "sysinfo",
+            "examples": "sysinfo",
+            "success": "系统信息\n\nKService 设备识其可: {0}\n主机名之: {1}\n事者目录: {2}\n系统本号泣: {3}\n机记体(用/闲/载): {4}吉字节 / {5}吉字节 / {6}吉字节\n理数器:\n\t名: {7}\n\t总线程数: {8}\n用户信息:\n\t名: {10}\n\t为编户目录: {11}\n\t默然竟端(Windows不助取): {12}\n\n系统已行 {9} 时少"
+        },
+        "shutdown": {
+            "description": "(非Windows下实验性) systools: 在系统为关机废滞(慎用之!)",
+            "usage": "shutdown",
+            "examples": "shutdown",
+            "undefinedUserId": "误矣: UserId取败，请更试之",
+            "first": "戒云：当废滞崩以算机, 请于 {0} 内量 \"shutdown\" 吏依关机.",
+            "delete": "盖曰：请削之.",
+            "shutdown": "闲引成功\n即将关机，请少后…\n正退Koishi…",
+            "exited": "Koishi已退."
+        },
+        "ip": {
+            "description": "systools: 取本相联置门外",
+            "usage": "ip",
+            "examples": "ip",
+            "failed": "IP 取败{0}",
+            "notPrivate": "置项 ipPublic，在今时中当教不可。更多详，请观 systools 置项 ipPublic"
+        }
+    },
+    "hooker": {
+        "hookerError": "糕! 不通于器(hooker) 误，免事，已终其行!",
+        "errorWithReported": "惭愧而遇之 :(\nKService 设备识其可: {0}\n行过: {1}\n已报成",
+        "errorWithoutReported": "惭愧而遇之 :(\nKService 设备识其可: {0}\n行过: {1}\n且告过: {2}"
+    }
+}

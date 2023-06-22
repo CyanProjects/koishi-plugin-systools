@@ -1,0 +1,54 @@
+{
+    "name": "ZH",
+    "tips": {
+        "empty": "命令语法不正确: {0} 参数为空"
+    },
+    "commands": {
+        "ping": {
+            "description": "systools: 调用网络API 查询指定可PING域名或IP的网站信息",
+            "usage": "ping <网址>",
+            "examples": "ping bilibili.com",
+            "pinging": "正在ping {0}, 这可能需要几秒钟...",
+            "failed": "尝试ping发生问题: {0}",
+            "success": "ping 信息返回\n网址: {0}\nIP: {1}\n延时(最小/最大): {2}/{3}\n网站归属地: {4}\nAPI请求节点: {5}",
+            "CNAPIFailed": "使用中国大陆API ping失败, 正在尝试使用国际API"
+        },
+        "cmd": {
+            "description": "systools: 运行系统命令 (不支持上下文)",
+            "usage": "cmd <系统命令>",
+            "examples": "cmd ipconfig\ncmd ifconfig",
+            "start": "开始运行 {0}\n请不要关闭计算机",
+            "failed": "命令运行错误:\n{0}\n共耗时 {1} 毫秒",
+            "success": "命令运行成功:\n{0}\n共耗时 {1} 毫秒",
+            "timeout": "命令运行超时: 共耗时 {0} 毫秒"
+        },
+        "sysinfo": {
+            "description": "systools: 获取系统信息",
+            "usage": "sysinfo",
+            "examples": "sysinfo",
+            "success": "系统信息\n\nKService 设备唯一识别码: {0}\n主机名称: {1}\n工作目录: {2}\n系统版本号: {3}\n机带RAM(使用/空闲/已装载): {4}GiB / {5}GiB / {6}GiB\n处理器:\n\t名称: {7}\n\t总线程数: {8}\n用户信息:\n\t名称: {10}\n\t用户目录: {11}\n\t默认终端(Windows下不支持获取): {12}\n\n系统已运行 {9} 小时"
+        },
+        "shutdown": {
+            "description": "(非Windows下实验性) systools: 对系统进行关机操作(谨慎使用)",
+            "usage": "shutdown",
+            "examples": "shutdown",
+            "undefinedUserId": "错误: UserId获取失败, 请重试",
+            "first": "警告: 该操作将会直接应用于您的计算机, 请在 {0} 内输入 \"shutdown\" 以确认是否需要关机",
+            "delete": "提示: 请求已超时删除.",
+            "shutdown": "确认成功\n即将关机, 请稍后...\n正在退出Koishi...",
+            "exited": "koishi已退出."
+        },
+        "ip": {
+            "description": "systools: 获取本机互联网 IP 地址",
+            "usage": "ip",
+            "examples": "ip",
+            "failed": "IP 获取失败{0}",
+            "notPrivate": "配置项 ipPublic 决定了您在当前会话中该指令不可用. 更多详情, 请参阅 systools 配置项 ipPublic"
+        }
+    },
+    "hooker": {
+        "hookerError": "糟糕! hooker 错误, 为避免出现问题, 已结束运行",
+        "errorWithReported": "对不起, 我们的插件遇到了些问题 :(\nKService 设备唯一识别码: {0}\n运行时错误: {1}\n已上报成功",
+        "errorWithoutReported": "对不起, 我们的插件遇到了些问题 :(\nKService 设备唯一识别码: {0}\n运行时错误: {1}\n且上报错误: {2}"
+    }
+}

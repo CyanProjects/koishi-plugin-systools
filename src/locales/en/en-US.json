@@ -1,0 +1,54 @@
+{
+    "name": "EN",
+    "tips": {
+        "empty": "Incorrect syntax: {0} argument emptied!"
+    },
+    "commands": {
+        "ping": {
+            "description": "systools: Call the network API to query the website information with the specified pingable domain name or IP address.",
+            "usage": "ping <url>",
+            "examples": "ping youtube.com",
+            "pinging": "Pinging {0}, this may take a few seconds...",
+            "failed": "Ping failed: {0}",
+            "success": "Ping return\nUrl: {0}\nIP: {1}\nLatency(min/max): {2}/{3}\nIP attribution: {4}\nRequest node: {5}.",
+            "CNAPIFailed": "If you see this message, may my plugin has something wrong :(\nThis information should not appear in a non-Chinese language.\nOriginal text: 使用中国大陆API ping失败, 正在尝试使用国际API"
+        },
+        "cmd": {
+            "description": "systools: Run system command. (Unsupported context!)",
+            "usage": "cmd <system-command>",
+            "examples": "cmd ipconfig\ncmd ifconfig",
+            "start": "Start {0}\nDon't power down your computer!",
+            "failed": "Command run error:\n{0}\nTotal time: {1} ms",
+            "success": "Command run successful:\n{0}\nTotal time: {1} ms",
+            "timeout": "Command run timeout: Total time: {0} ms"
+        },
+        "sysinfo": {
+            "description": "systools: Get system runtime information.",
+            "usage": "sysinfo",
+            "examples": "sysinfo",
+            "success": "System Information\n\nKService machineId: {0}\nHostname: {1}\nWork path: {2}\nSystem version: {3}\nRAM (used/free/total): {4}GiB / {5}GiB / {6}GiB\nCPU:\n\tModel: {7}\n\tThreads: {8}\nUserinfo:\n\tUsername: {10}\n\tUser home dir: {11}\n\tDefault shell(Unsupported Windows): {12}\n\nThe system has run: {9} hours."
+        },
+        "shutdown": {
+            "description": "(Experimentaling on any Non-Windows device) systools: Shutdown the system. (use carefully!)",
+            "usage": "shutdown",
+            "examples": "shutdown",
+            "undefinedUserId": "Error: Can't get UserId, please try again!",
+            "first": "Warning: The operation will be applied directly to your device, please type \"shutdown\" in {0} to confirm that the shutdown is required.",
+            "delete": "Tips: The request has timed out.",
+            "shutdown": "Confirm success!\nShutdowning, please wait...\nIs exiting Koishi...",
+            "exited": "koishi exited!"
+        },
+        "ip": {
+            "description": "systools: Get this device Internet IP address.",
+            "usage": "ip",
+            "examples": "ip",
+            "failed": "IP got failed{0}",
+            "notPrivate": "Configuration item \"ipPublic\" determines that this directive is not available to you in the current session. See the systools configuration item ipPublic for more details!"
+        }
+    },
+    "hooker": {
+        "hookerError": "Damned! hooker error, to avoid problems, the run has ended.",
+        "errorWithReported": "Sorry, your plugin ran into a problem. :(\nKService machineId: {0}\n{1}\nReport successfully!",
+        "errorWithoutReported": "Sorry, your plugin ran into a problem. :(\nKService machineId: {0}\n{1}\nAlso report error: {2}"
+    }
+}
