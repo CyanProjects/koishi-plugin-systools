@@ -355,7 +355,7 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
 
             langDict['commands'] = commands
             ctx.i18n.define(value.code, langDict)
-        } else { }  // 只有名称的不加载
+        } else { }  // 只有 name 的不加载
     }
 
     logger.debug(`${parentLang} language group base lang: ${baseLangFile}`)
@@ -372,7 +372,6 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
         commands[commandGroup.slice(0, -1)] = {}
         commands[commandGroup.slice(0, -1)]['description'] = ctx.config.commandGroupDesc
         baseLang['commands'] = commands
-        // console.log(baseLang['commands'])
     }
 
     ctx.i18n.define(parentLang, baseLang)

@@ -38,16 +38,17 @@ export const defaultUpdateStatus: UpdateStatus = {
 
 export class Updater {
     ctx: Context
-    installer: Installer
 
     constructor(ctx: Context) {
         this.ctx = ctx
-        this.installer = this.ctx.console.dependencies  // 获取 market 插件的 Installer
     }
 
     public async getLatestVersion(pluginFullName: string, registry: string = null): Promise<string> {
-        const url = new URL(`${pluginFullName}/latest`, registry ?? this.installer.registry ?? 'https://registry.npmjs.org/')
-        logger.debug(`market src: ${this.installer.registry}, registry: ${registry}, url: ${url}`)
+        const installer = this.ctx.console.dependencies  // 获取 market 插件的 Installer
+
+        const url = new URL(`${pluginFullName}/latest`, registry ?? installer.registry ?? 'https://registry.npmjs.org/')
+        logger.debug(`market: ${installer.registry}, registry: ${registry}, url: ${url}`)
+
         const { data } = await this.ctx.http.axios(url.href)
         if (typeof data !== 'object' || !data.version) {
             throw Error(`bad request with data ${data}`)
@@ -64,6 +65,7 @@ export class Updater {
          * @param registry: 镜像源
          * @returns number, 为 0 即成功
          */
+        const installer = this.ctx.console.dependencies  // 获取 market 插件的 Installer
 
         // let bot = null
         // for (const i in this.ctx.bots) {
@@ -74,8 +76,8 @@ export class Updater {
         // }
         // return 0
 
-        registry = registry ?? this.installer.registry ?? 'https://registry.npmjs.org/'  // 默认使用installer(market)的源
-        await this.installer.override(Object.create(plugins))  // 更新所有插件
+        registry = registry ?? installer.registry ?? 'https://registry.npmjs.org/'  // 默认使用installer(market)的源
+        await installer.override(Object.create(plugins))  // 更新所有插件
 
         const args: string[] = []
         const agent = which().name || 'npm'
@@ -86,7 +88,7 @@ export class Updater {
 
         if (install) {
             logger.debug('start to install using market API')
-            return await this.installer.exec(agent, args)
+            return await installer.exec(agent, args)
         }
         return 0
     }
@@ -266,4 +268,12 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
                 logger.info(`update success! ${thisUpdateStatus.now} => ${thisUpdateStatus.latest}`)
             }
         })
+}
+
+export function test(ctx: Context) {
+    const updater = new Updater(ctx)
+
+    const map = new Map()
+    map.set('koishi-plugin-open-pixiv', '1.0.11')
+    updater.install(map)
 }
