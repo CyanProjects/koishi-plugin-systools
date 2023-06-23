@@ -49,34 +49,23 @@ try {
 const script = `
 // const header = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.68';
 setTimeout(() => { this.outerHTML = ''; }, 0)  // 再见了 iframe!(x
-globalThis['__systools-buttons-created'] = [false, window.location.href]
-function r() {
-    if (!globalThis['__systools-buttons-created'][0] && globalThis['__systools-buttons-created'][1] === window.location.href) {
-        let navigation = document.getElementsByClassName('navigation')[0]
-        if (navigation) {
-            navigation.setAttribute('id', 'top');
-            navigation.innerHTML = \`<a class='k-button' target='_self' href='#end'>Systools: 转到配置</a>\` + navigation.innerHTML;
+globalThis['__systools-config-page-url'] = window.location.href
+function w() {
+    if (globalThis['__systools-config-page-url'] === window.location.href) {
+        let _navigation = document.getElementsByClassName('navigation')[0]
+        if (_navigation && !document.getElementById('toConfigButton')) {
+            _navigation.setAttribute('id', 'top');
+            _navigation.innerHTML = \`<a id='toConfigButton' class='k-button' target='_self' href='#end'>Systools: 转到配置</a>\` + _navigation.innerHTML
         }
-        let elButton = document.getElementsByClassName('el-button')[0]
-        if (elButton) {
-            elButton.outerHTML = \`<a class='el-button' target='_self' href='#top'>Systools: 回到简介</a>\` + elButton.outerHTML
+        let kFilter = document.getElementsByClassName('k-filter')[0]
+        if (kFilter.firstElementChild && !document.getElementById('toTopButton')) {
+            kFilter.firstElementChild.innerHTML = \`<a id='toTopButton' class='el-button' target='_self' href='#top'>Systools: 回到简介</a>\` + kFilter.firstElementChild.innerHTML
         }
-        let kButtonPrimary = document.getElementsByClassName('k-button primary')[0]
-        if (kButtonPrimary) {
-            kButtonPrimary.outerHTML = \`<a class='k-button primary' target='_self' href='#top'>Systools: 回到简介</a>\` + kButtonPrimary.outerHTML
-        }
-        if (!navigation && !(elButton || kButtonPrimary)) {
-            setTimeout(r, 1)
-        } else {
-            globalThis['__systools-buttons-created'] = [true, window.location.href];  // 设置已创建 buttons 以免重复创建
-        }
-    } else if (globalThis['__systools-buttons-created'][1] !== window.location.href) {
-        globalThis['__systools-buttons-created'][0] = false;
     }
 }
-setTimeout(() => {setInterval(r, 1)}, 1000)
+w()
+setInterval(w, 10)
 `
-
 
 // <a class="el-button" target="_self" href="#end">转到配置</a>
 // <a class="el-button" target="_self" href="#top">回到简介</a>
@@ -115,7 +104,7 @@ changesHandler.read(path.resolve(__dirname, '../changes.md')).then(async (text: 
     //     const data = value.data.split('\n').slice(1).join('\n').replace(/\n|\r\n/g, '<br>')  // 去除首行 + 替换换行符
     //     result += `${version} | ${data}\n`
     // }
-    let result = `${changesInfo.data}
+    let result = `${changesInfo.data ?? ''}
 <div id="end"></div>`
     usage = usage.replace('{updates}', result)
 })
@@ -200,7 +189,7 @@ export const Config: Schema<Dict> = Schema.intersect([
     Schema.object({
         maxUpdateAttempts: Schema.number()
         .min(1)
-        .default(10)
+        .default(3)
         .description('连续更新失败最大次数上限 (次)'),
         updateCoolingDown: Schema.number()
         .min(0)
@@ -325,7 +314,7 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
     for (const i in langs) {
         const value = langs[i]
         if (langPreference === value.code && value.file) {
-            logger.debug(`Setting language: ${value.name} (${value.code}) => ${value.file} ./locales/${value.file}`)
+            logger.debug(`selected language: ${value.name} (${value.code}) => ${value.file} ./locales/${value.file}`)
             baseLangFile = `./locales/${value.file}`
         } else if (value.code && value.file) {
             logger.debug(`registry ${value.name} (${value.code}) => ${value.file} ./locales/${value.file}`)

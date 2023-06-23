@@ -44,8 +44,10 @@ export class Updater {
         this.installer = this.ctx.console.dependencies  // 获取 market 插件的 Installer
     }
 
-    public async getLatestVersion(pluginFullName: string): Promise<string> {
-        const { data } = await this.ctx.http.axios(new URL(`${pluginFullName}/latest`, this.installer.registry).href)
+    public async getLatestVersion(pluginFullName: string, registry: string = null): Promise<string> {
+        const url = new URL(`${pluginFullName}/latest`, registry ?? this.installer.registry ?? 'https://registry.npmjs.org/')
+        logger.debug(`market src: ${this.installer.registry}, registry: ${registry}, url: ${url}`)
+        const { data } = await this.ctx.http.axios(url.href)
         if (typeof data !== 'object' || !data.version) {
             throw Error(`bad request with data ${data}`)
         }
@@ -54,7 +56,7 @@ export class Updater {
         return data.version
     }
 
-    public async install(plugins: Map<string, string>, install: boolean = true, registry: string = undefined): Promise<number> {
+    public async install(plugins: Map<string, string>, install: boolean = true, registry: string = null): Promise<number> {
         /**
          * @param plugins: Map<pluginFullName: string, version: string>
          * @param install: 是否真正更新还是仅复写 package.json
@@ -62,7 +64,7 @@ export class Updater {
          * @returns number, 为 0 即成功
          */
 
-        registry = registry ?? this.installer.registry  // 默认使用installer(market)的源
+        registry = registry ?? this.installer.registry ?? 'https://registry.npmjs.org/'  // 默认使用installer(market)的源
         await this.installer.override(Object.create(plugins))  // 更新所有插件
 
         const args: string[] = []
@@ -159,15 +161,28 @@ export class UpdateStatusWriter {
 }
 
 
-export async function update(updater: Updater, statusWriter: UpdateStatusWriter, pluginFullName: string, version: string, config: Config, indexFilename: string, force:boolean=false) {
+export async function update(updater: Updater, statusWriter: UpdateStatusWriter, pluginFullName: string, version: string, config: Config, indexFilename: string, force: boolean = false) {
     /**
      * @param force: 强制更新, 不校验是否处于合法更新条件
      */
     const latestUpdateStatus: UpdateStatus = (await statusWriter.read()) ?? defaultUpdateStatus
 
-    if (latestUpdateStatus.tried > config.maxUpdateAttempts && new Date().getTime() - latestUpdateStatus.timestamp <= config.updateCoolingDown && !force) {
+    if (
+        latestUpdateStatus.tried > config.maxUpdateAttempts
+        && new Date().getTime() - latestUpdateStatus.timestamp <= config.updateCoolingDown
+        && !force
+    ) {
         logger.debug('update condition is not met, continue')
         return  // 不符合更新条件, 直接跳过
+    }
+
+    if (
+        latestUpdateStatus.code === updateCode.success
+        && new Date().getTime() - latestUpdateStatus.timestamp <= config.updateCoolingDown
+        && !force
+    ) {
+        logger.debug('too close to last update, continue')
+        return  // 与上次更新太近且上次更新成功, 跳过
     }
 
     logger.debug('try to check update')
@@ -175,7 +190,7 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
     const [statusCode, error, msg] = await updater.update(
         pluginFullName,
         version,
-        (version, latest) => {  // 开始更新显示信息
+        async (version, latest) => {  // 开始更新显示信息
             logger.debug('start to update')
             const status: UpdateStatus = {
                 updating: true,
@@ -186,7 +201,7 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
                 timestamp: new Date().getTime(),
                 tried: latestUpdateStatus.tried + 1
             }
-            statusWriter.write(status)
+            await statusWriter.write(status)
         }
     )
 
@@ -194,36 +209,49 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
     thisUpdateStatus.code = statusCode
     thisUpdateStatus.msg = msg
     thisUpdateStatus.now = version
-    thisUpdateStatus.error = `${error}`
     if (statusCode === updateCode.isLatest) {
-        thisUpdateStatus.latest = msg
+        thisUpdateStatus.timestamp = new Date().getTime()
+        thisUpdateStatus.latest = error
+    } else if (statusCode !== updateCode.success) {  // 是 latest 已经被上面的 if 捕获了
+        thisUpdateStatus.error = `${error.stack ?? error}`
     }
-
-    statusWriter.write(thisUpdateStatus)
+    await statusWriter.write(thisUpdateStatus)
 
     if (statusCode !== updateCode.success && statusCode !== updateCode.isLatest) {
         logger.warn(`installation failed, more information => ${statusWriter.filename}`)
+        if (error) {
+            logger.debug(error)
+        }
         return  // 直接返回
     } else if (statusCode === updateCode.isLatest) {
-        logger.debug(`is the latest verison, continue`)
-        return 
+        logger.debug(`is the latest verison (${thisUpdateStatus.now} >= ${thisUpdateStatus.latest}), continue`)
+        return  // 最新版本直接返回
     }
 
+    thisUpdateStatus.code = updateCode.success  // 先写以免重载的时候写不进去
+    thisUpdateStatus.msg = 'success'
+    thisUpdateStatus.updating = false
+    await statusWriter.write(thisUpdateStatus)
+
     updater.reload(indexFilename).then(  // then 避免 koishi 杀插件
-        (array) => {
-            const [ statusCode, error, msg ] = array
+        async (array) => {
+            const [statusCode, error, msg] = array
 
             thisUpdateStatus.code = statusCode
             thisUpdateStatus.now = version
             thisUpdateStatus.msg = msg
-            thisUpdateStatus.error = `${error}`
             if (statusCode === updateCode.success) {
-                thisUpdateStatus.tried = 0  // 失败次数清零
+                thisUpdateStatus.tried = 0  // 成功后失败次数清零
+            } else {
+                thisUpdateStatus.error = `${error.stack ?? error}`
             }
 
-            statusWriter.write(thisUpdateStatus)
+            await statusWriter.write(thisUpdateStatus)
             if (statusCode !== updateCode.success) {
-                logger.warn(`reload failed, more information => ${statusWriter.filename}`)
+                logger.warn(`reload failed, ${error ?? msg}, more information => ${statusWriter.filename}`)
+                if (error) {
+                    logger.debug(error)
+                }
             } else {
                 logger.info(`update success! ${thisUpdateStatus.now} => ${thisUpdateStatus.latest}`)
             }

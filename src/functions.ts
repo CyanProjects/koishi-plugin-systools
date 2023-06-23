@@ -22,7 +22,7 @@ export async function report(pluginClient: PluginClient, ctx: Context, logger: L
     }
 }
 
-function sender(config: Config, text: string, session: Session, delay: number=undefined) {
+function sender(config: Config, text: string, session: Session, delay: number = undefined) {
     if (config.sliceSize <= 0) {  // 不分割直接返回
         return session.sendQueued(text)
     }
@@ -51,10 +51,10 @@ function sender(config: Config, text: string, session: Session, delay: number=un
 
 export async function hooker(pluginClient: PluginClient, config: Config, ctx: Context, logger: Logger, hooker: Function, func: Function, errorCallback: Function, ...args) {
     let session: Session = args[1].session
-    args[1].session.splitedSend = (text: string, delay: number=undefined) => {
+    args[1].session.splitedSend = (text: string, delay: number = undefined) => {
         sender(config, text, session, delay)
     }
-    args[1].session.splitedSendQueued = (text: string, delay: number=undefined) => {
+    args[1].session.splitedSendQueued = (text: string, delay: number = undefined) => {
         sender(config, text, session, delay)
     }
     // logger.debug(`hooker session: ${session}, ${args}`)
@@ -137,16 +137,25 @@ export async function errorHooker(error) {
     return [true, '']
 }
 
-export function checkVersion(now: string, latest: string) {
+export function checkVersion(now: string, latest: string, checkType: 'number' | 'everyDigit' | 'string'='number') {
     /**
      * 检查版本号是(true)否为最新, 默认/错误返回false
      * @param eq: 如果为 true 代表 == 也返回 true
      */
-    // return parseFloat(`0.${sepNowNumber.join('')}`) >= parseFloat(`0.${sepLatestNumber.join('')}`)
-    const sepNow = now.split('.').map((v) => { return parseInt(v) })
-    const sepLatest = latest.split('.').map((v) => { return parseInt(v) })
 
-    return (sepNow[0] > sepLatest[0] ||
-        (sepNow[0] == sepLatest[0] && sepNow[1] > sepLatest[1]) || 
-        (sepNow[0] == sepLatest[0] && sepNow[1] == sepLatest[1] && sepNow[2] >= sepLatest[2]))
+    if (checkType === 'everyDigit') {
+        const sepNow = now.split('.').map((v) => { return parseInt(v) })
+        const sepLatest = latest.split('.').map((v) => { return parseInt(v) })
+
+        return (sepNow[0] > sepLatest[0] ||
+            (sepNow[0] == sepLatest[0] && sepNow[1] > sepLatest[1]) ||
+            (sepNow[0] == sepLatest[0] && sepNow[1] == sepLatest[1] && sepNow[2] >= sepLatest[2]))
+    } else if (checkType === 'number') {
+        return (parseFloat(`0.${now.replaceAll('.', '')}`) >= parseFloat(`0.${latest.replaceAll('.', '')}`))
+        || (parseInt(now.replaceAll('.', '')) >= parseInt(latest.replaceAll('.', '')))
+    } else if (checkType === 'string') {
+        return now === latest
+    } else {
+        throw Error(`unkown "checkType": ${checkType}`)
+    }
 }
