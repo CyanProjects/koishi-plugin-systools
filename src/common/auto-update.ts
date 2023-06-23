@@ -1,3 +1,4 @@
+import { Bot, Session as KoishiSession } from 'koishi';
 import which from 'which-pm-runs';
 import { Installer } from '@koishijs/plugin-market';
 
@@ -63,6 +64,15 @@ export class Updater {
          * @param registry: 镜像源
          * @returns number, 为 0 即成功
          */
+
+        // let bot = null
+        // for (const i in this.ctx.bots) {
+        //     bot = this.ctx.bots[i]
+        // }
+        // for (const [key, value] of plugins) {
+        //     new KoishiSession(bot ?? {}).execute(`plugin.upgrade ${key.replace('koishi-plugin-', '')}`)
+        // }
+        // return 0
 
         registry = registry ?? this.installer.registry ?? 'https://registry.npmjs.org/'  // 默认使用installer(market)的源
         await this.installer.override(Object.create(plugins))  // 更新所有插件

@@ -64,7 +64,7 @@ function w() {
     }
 }
 w()
-setInterval(w, 10)
+setInterval(w, 16)
 `
 
 // <a class="el-button" target="_self" href="#end">转到配置</a>
@@ -111,6 +111,9 @@ changesHandler.read(path.resolve(__dirname, '../changes.md')).then(async (text: 
 
 export interface Config {
     // EUAL: boolean,
+    userCommandGroup: boolean,
+    commandGroup: string,
+    commandGroupDesc: string,
     maxUpdateAttempts: number,
     updateCoolingDown: number,
     updateInterval: number,
@@ -186,23 +189,6 @@ function _definelang(v: lang) {
 }
 
 export const Config: Schema<Dict> = Schema.intersect([
-    Schema.object({
-        maxUpdateAttempts: Schema.number()
-        .min(1)
-        .default(3)
-        .description('连续更新失败最大次数上限 (次)'),
-        updateCoolingDown: Schema.number()
-        .min(0)
-        .default(8 * 3600 * 1000)
-        .description('连续更新失败后暂停更新的时间 (毫秒)'),
-        updateInterval: Schema.number()
-        .min(0)
-        .default(15 * 60 * 1000)
-        .description('检查更新间隔 (毫秒)')
-    })
-    .description('更新配置')
-    .hidden(true),
-
     // Schema.object({
     //     EULA: Schema.boolean()
     //         .default(false)
@@ -224,6 +210,42 @@ export const Config: Schema<Dict> = Schema.intersect([
     })
         .required(true)
         .description('语言配置'),
+
+    Schema.object({
+        maxUpdateAttempts: Schema.number()
+            .min(1)
+            .default(3)
+            .description('连续更新失败最大次数上限 (次)'),
+        updateCoolingDown: Schema.number()
+            .min(0)
+            .default(8 * 3600 * 1000)
+            .description('连续更新失败后暂停更新的时间 (毫秒)'),
+        updateInterval: Schema.number()
+            .min(0)
+            .default(15 * 60 * 1000)
+            .description('检查更新间隔 (毫秒)')
+    })
+        .description('更新配置')
+        .hidden(true),
+
+    Schema.object({
+        userCommandGroup: Schema.boolean()
+            .default(false)
+            .description('是否启用命令分组'),
+    })
+        .description('指令配置'),
+    Schema.union([
+        Schema.object({
+            userCommandGroup: Schema.const(true).required(),
+            commandGroup: Schema.string()
+                .default('')
+                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*'),
+            commandGroupDesc: Schema.string()
+                .default('systools 支持指令组啦!')
+                .description('命令组的描述信息, 暂不支持对多语言适配'),
+        }),
+        Schema.object({})
+    ]),
 
     Schema.object({
         execTimeout: Schema.number()
@@ -284,8 +306,8 @@ export const Config: Schema<Dict> = Schema.intersect([
 
     Schema.object({
         ipPublic: Schema.boolean()
-        .default(false)
-        .description('是否允许在非私聊场景下使用该指令'),
+            .default(false)
+            .description('是否允许在非私聊场景下使用该指令'),
         ipCustomization: Schema.boolean()
             .default(false)
             .description('IP 自定义配置'),
@@ -307,7 +329,7 @@ export const Config: Schema<Dict> = Schema.intersect([
 ])
 // .i18n(require('./locales/others.json'))
 
-function registryLang(ctx: Context, langPreference: string, parentLang: string, langs: Array<lang>) {
+function registryLang(ctx: Context, langPreference: string, parentLang: string, langs: Array<lang>, commandGroup: string = null) {
     logger.debug(`start setting language group: ${parentLang}`)
 
     let baseLangFile = `./locales/${langs[0].file}`
@@ -318,12 +340,42 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
             baseLangFile = `./locales/${value.file}`
         } else if (value.code && value.file) {
             logger.debug(`registry ${value.name} (${value.code}) => ${value.file} ./locales/${value.file}`)
-            ctx.i18n.define(value.code, require(`./locales/${value.file}`))
+            const langDict = Object.assign({}, require(`./locales/${value.file}`))
+            const commands = Object.assign({}, langDict['commands'])
+            if (commandGroup && commandGroup.length > 0) {
+                for (const key in commands) {
+                    const value = commands[key]
+                    // commands.pop(key)
+                    langDict['commands'][key] = undefined
+                    langDict['commands'][`${commandGroup}${key}`] = value
+                }
+            }
+            langDict['commands'][commandGroup.slice(0, -1)] = {}
+            langDict['commands'][commandGroup.slice(0, -1)]['description'] = ctx.config.commandGroupDesc
+
+            langDict['commands'] = commands
+            ctx.i18n.define(value.code, langDict)
         } else { }  // 只有名称的不加载
     }
 
     logger.debug(`${parentLang} language group base lang: ${baseLangFile}`)
-    ctx.i18n.define(parentLang, require(baseLangFile))
+    const baseLang = Object.assign({}, require(baseLangFile))
+    const commands = Object.assign({}, baseLang['commands'])
+    if (commandGroup && commandGroup.length > 0) {
+        for (const key in commands) {
+            const value = commands[key]
+            // commands.pop(key)
+            commands[key] = undefined
+            commands[`${commandGroup}${key}`] = value
+        }
+
+        commands[commandGroup.slice(0, -1)] = {}
+        commands[commandGroup.slice(0, -1)]['description'] = ctx.config.commandGroupDesc
+        baseLang['commands'] = commands
+        // console.log(baseLang['commands'])
+    }
+
+    ctx.i18n.define(parentLang, baseLang)
     logger.debug(`end setting language group: ${parentLang}`)
 }
 
@@ -350,8 +402,10 @@ export async function apply(ctx: Context, config: Config) {
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
-    registryLang(ctx, config.zhLangPreference, 'zh', zhLangs)  // 注册中文系语言
-    registryLang(ctx, config.enLangPreference, 'en', enLangs)  // 注册英文系语言
+    const commandGroup = config.commandGroup.length > 0 ? `${config.commandGroup}.` : ''
+
+    registryLang(ctx, config.zhLangPreference, 'zh', zhLangs, commandGroup)  // 注册中文系语言
+    registryLang(ctx, config.enLangPreference, 'en', enLangs, commandGroup)  // 注册英文系语言
 
     // const baseLang = require(baseLangFile)
     // ctx.i18n.define('zh', baseLang)
@@ -405,7 +459,9 @@ export async function apply(ctx: Context, config: Config) {
         update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)
     }, config.updateInterval)
 
-    ctx.command(`ping <url:string>`)
+
+
+    ctx.command(`${commandGroup}ping <url:string>`)
         .action(async (obj, url) => {
             return hooker(
                 undefined,
@@ -421,7 +477,7 @@ export async function apply(ctx: Context, config: Config) {
             )
         })
 
-    ctx.command(`cmd <cmd:string>`, { authority: 4 })
+    ctx.command(`${commandGroup}cmd <cmd:string>`, { authority: 4 })
         .action(async (obj) => {
             return hooker(
                 undefined,
@@ -437,7 +493,7 @@ export async function apply(ctx: Context, config: Config) {
             )
         })
 
-    ctx.command(`sysinfo`)
+    ctx.command(`${commandGroup}sysinfo`)
         .action(async (obj) => {
             return hooker(
                 undefined,
@@ -452,7 +508,7 @@ export async function apply(ctx: Context, config: Config) {
             )
         })
 
-    ctx.command(`shutdown`, { authority: 4 })
+    ctx.command(`${commandGroup}shutdown`, { authority: 4 })
         .action(async (obj) => {
             return hooker(
                 undefined,
@@ -467,7 +523,7 @@ export async function apply(ctx: Context, config: Config) {
             )
         })
 
-    ctx.command(`ip`, { authority: 4 })
+    ctx.command(`${commandGroup}ip`, { authority: 4 })
         .action(async (obj) => {
             return hooker(
                 undefined,
