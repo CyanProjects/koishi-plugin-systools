@@ -22,9 +22,9 @@ export async function report(pluginClient: PluginClient, ctx: Context, logger: L
     }
 }
 
-function sender(config: Config, text: string, session: Session, delay: number = undefined) {
+function sender(config: Config, text: string, session: Session, resultPrefix: string, delay: number = undefined) {
     if (config.sliceSize <= 0) {  // 不分割直接返回
-        return session.sendQueued(text)
+        return session.sendQueued(`${resultPrefix}${text}`)
     }
 
     let r: Promise<string[]> = null
@@ -35,27 +35,27 @@ function sender(config: Config, text: string, session: Session, delay: number = 
                 end = text.length  // 找不到下一行直接设置为最后
             }
             end += config.sliceSize
-            // session.sendQueued.call(this, text.slice(0, end), ...args)
-            r = session.sendQueued(text.slice(0, end), delay)
+            // session.sendQueued.call(this, `${resultPrefix}${text.slice(0, end)}`, ...args)
+            r = session.sendQueued(`${resultPrefix}${text.slice(0, end)}`, delay)
             text = text.slice(end + 1)
         }
         return r
     } else {  //  默认分割
         for (let i = 0; i < Math.ceil(text.length / config.sliceSize); i++) {
-            // session.sendQueued.call(this, text.slice(config.sliceSize * i, config.sliceSize * (i + 1)), ...args)
-            r = session.sendQueued(text.slice(config.sliceSize * i, config.sliceSize * (i + 1)), delay)
+            // session.sendQueued.call(this, t`${resultPrefix}${text.slice(config.sliceSize * i, config.sliceSize * (i + 1))}`, ...args)
+            r = session.sendQueued(`${resultPrefix}${text.slice(config.sliceSize * i, config.sliceSize * (i + 1))}`, delay)
         }
         return r
     }
 }
 
-export async function hooker(pluginClient: PluginClient, config: Config, ctx: Context, logger: Logger, hooker: Function, func: Function, errorCallback: Function, ...args) {
+export async function hooker(pluginClient: PluginClient, config: Config, ctx: Context, logger: Logger, resultPrefix: string, hooker: Function, func: Function, errorCallback: Function, ...args) {
     let session: Session = args[1].session
     args[1].session.splitedSend = (text: string, delay: number = undefined) => {
-        sender(config, text, session, delay)
+        sender(config, text, session, resultPrefix, delay)
     }
     args[1].session.splitedSendQueued = (text: string, delay: number = undefined) => {
-        sender(config, text, session, delay)
+        sender(config, text, session, resultPrefix, delay)
     }
     // logger.debug(`hooker session: ${session}, ${args}`)
 
@@ -64,18 +64,18 @@ export async function hooker(pluginClient: PluginClient, config: Config, ctx: Co
         if (!hookerStatus) {
             // 如果不符合hooker条件 (如不同意EULA)则直接返回, 不继续运行
             logger.debug(`hooker function break the ${func.name}`)
-            sender(config, hookerResult, session)  // 分片发送替代直接return
+            sender(config, hookerResult, session, resultPrefix)  // 分片发送替代直接return
             return
             // return hookerResult
         }
     } catch (error) {
         logger.warn(`hooker function error, break the ${func.name}`, error.stack)
-        sender(config, session.text("hooker.hookerError"), session)
+        sender(config, session.text("hooker.hookerError"), session, resultPrefix)
         // return session.text("hooker.hookerError")
     }
     try {
         const result: string = await func.call(this, ...args)
-        sender(config, result, session)  // 分片发送替代直接return
+        sender(config, result, session, resultPrefix)  // 分片发送替代直接return
         return
     } catch (error) {
         logger.warn(error)
@@ -86,17 +86,17 @@ export async function hooker(pluginClient: PluginClient, config: Config, ctx: Co
             }
             let [status, msg] = await report.call(this, ...[pluginClient, ctx, logger, func.name, 'error', ...args])
             if (status === 0) {
-                sender(config, session.text("hooker.errorWithReported", [cid, `${error}`]), session)  // 分片发送替代直接return
+                sender(config, session.text("hooker.errorWithReported", [cid, `${error}`]), session, resultPrefix)  // 分片发送替代直接return
                 return
                 // return session.text("hooker.errorWithReported", [cid, `${error}`])
             }
             logger.debug(status, msg)
-            sender(config, session.text("hooker.errorWithoutReported", [cid, `${error}`, `${msg}`]), session)  // 分片发送替代直接return
+            sender(config, session.text("hooker.errorWithoutReported", [cid, `${error}`, `${msg}`]), session, resultPrefix)  // 分片发送替代直接return
             return
             // return session.text("hooker.errorWithoutReported", [cid, `${error}`, `${msg}`])
         } catch (err) {
             logger.warn(err)
-            sender(config, session.text("hooker.errorWithoutReported", [cid, `${error}`, `${err}`]), session)  // 分片发送替代直接return
+            sender(config, session.text("hooker.errorWithoutReported", [cid, `${error}`, `${err}`]), session, resultPrefix)  // 分片发送替代直接return
             return
             // return session.text("hooker.errorWithoutReported", [cid, `${error}`, `${err}`])
         }

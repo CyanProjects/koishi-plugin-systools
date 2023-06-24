@@ -1,6 +1,6 @@
 // import {  } from 'pangu'
 // 上面是全局引入
-import { Dict, Schema } from 'koishi';
+import { Dict, Schema } from 'koishi'
 import * as path from 'path'
 import { } from '@koishijs/plugin-help'
 import { } from 'koishi-plugin-k-report'
@@ -8,11 +8,10 @@ import * as os from 'node:os'
 
 import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
-import { reportWS, Context, Session, logger, updateStatusFilename } from "./constants"
+import { reportWS, Context, Session, logger, updateStatusFilename, _ikunPluginFullName, packageJson, _resultPrefix  } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
-import { packageJson } from './constants';
-import { update, Updater, UpdateStatusWriter } from './common/auto-update';
+import { update, Updater, UpdateStatusWriter } from './common/auto-update'
 
 export const using_disabled = ['kreport']
 export const using = ['console.dependencies']
@@ -239,7 +238,7 @@ export const Config: Schema<Dict> = Schema.intersect([
             userCommandGroup: Schema.const(true).required(),
             commandGroup: Schema.string()
                 .default('')
-                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*'),
+                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*<br>注意: `i18n` 路径仍为 \<指令名\>, 而非 \<指令组名.指令名\>, 仅 `description` `usage` 和 `examples` 为 \<指令组名.指令名\>'),
             commandGroupDesc: Schema.string()
                 .default('systools 支持指令组啦!')
                 .description('命令组的描述信息, 暂不支持对多语言适配'),
@@ -346,8 +345,16 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
                 for (const key in commands) {
                     const value = commands[key]
                     // commands.pop(key)
-                    langDict['commands'][key] = undefined
-                    langDict['commands'][`${commandGroup}${key}`] = value
+                    // langDict['commands'][key] = undefined
+                    if (langDict['commands'] && langDict['commands'][key]) {
+                        langDict['commands'][key].description = langDict['commands'][key].usage = langDict['commands'][key].examples = undefined
+                    }
+
+                    langDict['commands'][`${commandGroup}${key}`] = {
+                        description: value.description,
+                        usage: value.usage,
+                        examples: value.examples
+                    }
                 }
             }
             langDict['commands'][commandGroup.slice(0, -1)] = {}
@@ -365,8 +372,16 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
         for (const key in commands) {
             const value = commands[key]
             // commands.pop(key)
-            commands[key] = undefined
-            commands[`${commandGroup}${key}`] = value
+            // commands[key] = undefined
+            if (commands['commands'] && commands['commands'][key]) {
+                commands['commands'][key].description = commands['commands'][key].usage = commands['commands'][key].examples = undefined
+            }
+
+            commands[`${commandGroup}${key}`] = {
+                description: value.description,
+                usage: value.usage,
+                examples: value.examples
+            }
         }
 
         commands[commandGroup.slice(0, -1)] = {}
@@ -390,6 +405,7 @@ import * as ip from "./commands/ip";
 //     config,
 //     ctx,
 //     logger,
+//     resultPrefix,
 //     eventHooker,
 //     ping.ping,  // 要调用的函数
 //     errorHooker,
@@ -458,7 +474,9 @@ export async function apply(ctx: Context, config: Config) {
         update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)
     }, config.updateInterval)
 
-
+    const rootPkgJson = require(path.resolve(ctx.baseDir, 'package.json'))
+    const dependencies = rootPkgJson['dependencies'] ?? {}
+    const resultPrefix = (dependencies[_ikunPluginFullName] && dependencies[_ikunPluginFullName].length > 0) ? _resultPrefix : ''  // 命令输出前缀
 
     ctx.command(`${commandGroup}ping <url:string>`)
         .action(async (obj, url) => {
@@ -467,6 +485,7 @@ export async function apply(ctx: Context, config: Config) {
                 config,
                 ctx,
                 logger,
+                resultPrefix,
                 eventHooker,
                 ping.ping,
                 errorHooker,
@@ -483,6 +502,7 @@ export async function apply(ctx: Context, config: Config) {
                 config,
                 ctx,
                 logger,
+                resultPrefix,
                 eventHooker,
                 exec.systoolsExec,
                 errorHooker,
@@ -499,6 +519,7 @@ export async function apply(ctx: Context, config: Config) {
                 config,
                 ctx,
                 logger,
+                resultPrefix,
                 eventHooker,
                 sysinfo.sysinfo,
                 errorHooker,
@@ -514,6 +535,7 @@ export async function apply(ctx: Context, config: Config) {
                 config,
                 ctx,
                 logger,
+                resultPrefix,
                 eventHooker,
                 shutdown.shutdown,
                 errorHooker,
@@ -529,6 +551,7 @@ export async function apply(ctx: Context, config: Config) {
                 config,
                 ctx,
                 logger,
+                resultPrefix,
                 eventHooker,
                 ip.ip,
                 errorHooker,

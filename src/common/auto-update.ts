@@ -1,6 +1,6 @@
 import { Bot, Session as KoishiSession } from 'koishi';
 import which from 'which-pm-runs';
-import { Installer } from '@koishijs/plugin-market';
+import {  } from '@koishijs/plugin-market';
 
 import * as filesystem from './filesystem';
 import { checkVersion } from '../functions';
@@ -44,7 +44,7 @@ export class Updater {
     }
 
     public async getLatestVersion(pluginFullName: string, registry: string = null): Promise<string> {
-        const installer = this.ctx.console.dependencies  // 获取 market 插件的 Installer
+        const installer: any = this.ctx.console.dependencies  // 获取 market 插件的 Installer
 
         const url = new URL(`${pluginFullName}/latest`, registry ?? installer.registry ?? 'https://registry.npmjs.org/')
         logger.debug(`market: ${installer.registry}, registry: ${registry}, url: ${url}`)
@@ -65,7 +65,7 @@ export class Updater {
          * @param registry: 镜像源
          * @returns number, 为 0 即成功
          */
-        const installer = this.ctx.console.dependencies  // 获取 market 插件的 Installer
+        const installer: any = this.ctx.console.dependencies  // 获取 market 插件的 Installer
 
         // let bot = null
         // for (const i in this.ctx.bots) {
@@ -274,6 +274,6 @@ export function test(ctx: Context) {
     const updater = new Updater(ctx)
 
     const map = new Map()
-    map.set('koishi-plugin-open-pixiv', '1.0.11')
+    map.set('koishi-plugin-genshin-gacha', 'latest')
     updater.install(map)
 }

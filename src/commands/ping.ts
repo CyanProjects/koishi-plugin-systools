@@ -18,10 +18,10 @@ export async function ping(ctx: Context, { session: _session }, url: string) {
             return session.text('commands.ping.success', [data.host, data.ip, data.ping_time_min, data.ping_time_max, data.location, data.node])
         }
         session.splitedSend(session.text('commands.ping.CNAPIFailed'))
-        ctx.logger('systools').debug('Call the Chinese mainland API ping failed!')
+        logger.debug('Call the Chinese mainland API ping failed!')
     }
 
-    ctx.logger('systools').debug('Use the i18nal API!')
+    logger.debug('Use the i18nal API!')
     let data = await ctx.systools.http.post(`https://geekflare.com/api/geekflare-api/ping`, { url: url }, { validateStatus: (status) => { return true } })  // 非中国大陆网站ping方式
     if (!data.data.ip || data.data.ip.length <= 0) {
         if (data.apiCode === 200) {
