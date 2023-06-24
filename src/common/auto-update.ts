@@ -1,21 +1,24 @@
+import * as path from 'node:path'
 import { Bot, Session as KoishiSession } from 'koishi';
 import which from 'which-pm-runs';
-import {  } from '@koishijs/plugin-market';
+import { } from '@koishijs/plugin-market';
+import * as readline from 'node:readline'
 
 import * as filesystem from './filesystem';
 import { checkVersion } from '../functions';
 import { Context, logger } from '../constants';
 import { Config } from '..';
+import * as JSON from './json'
 
 export enum updateCode {
     updating = 2,
     isLatest = 1,
     success = 0,
     getVersionError = -1,
-    installFailedWithNpmError = -2,
-    installFailedWithNodejsError = -3
+    installFailedWithNpmOrYarnError = -2,
+    installFailedWithNodejsError = -3,
+    reloadFailed = -4
 }
-
 export interface UpdateStatus {
     updating: boolean,  // 是否正在更新
     code: number,  // 安装状态 (与 updater.update 和 updater.reload 的 code 相同, 2 代表更新中)
@@ -43,41 +46,43 @@ export class Updater {
         this.ctx = ctx
     }
 
+    private getMarket(): any {
+        return this.ctx.installer ?? this.ctx.console.dependencies
+    }
+
+    private getMarketRegistry(): string {
+        const installer = this.getMarket()
+        return installer.endpoint ?? installer.registry
+    }
+
     public async getLatestVersion(pluginFullName: string, registry: string = null): Promise<string> {
-        const installer: any = this.ctx.console.dependencies  // 获取 market 插件的 Installer
+        // this.ctx.installer.endpoint 是 market 设置的镜像源
+        const _marketRegistry = this.getMarketRegistry()
+        const url = new URL(`${pluginFullName}/latest`, registry ?? _marketRegistry ?? 'https://registry.npmjs.org/')
+        logger.debug(`market: ${_marketRegistry}, registry: ${registry}, url: ${url}`)
 
-        const url = new URL(`${pluginFullName}/latest`, registry ?? installer.registry ?? 'https://registry.npmjs.org/')
-        logger.debug(`market: ${installer.registry}, registry: ${registry}, url: ${url}`)
-
-        const { data } = await this.ctx.http.axios(url.href)
+        const { data } = await this.ctx.systools.http.axios(url.href)
         if (typeof data !== 'object' || !data.version) {
             throw Error(`bad request with data ${data}`)
         }
 
-        logger.debug(`get the latest verison: ${data.version}`)
+        logger.debug(`get the latest version: ${data.version}`)
         return data.version
     }
 
-    public async install(plugins: Map<string, string>, install: boolean = true, registry: string = null): Promise<number> {
+    public async install(pluginFullName: string, targetVersion: string, install: boolean = true, registry: string = null): Promise<number> {
         /**
          * @param plugins: Map<pluginFullName: string, version: string>
          * @param install: 是否真正更新还是仅复写 package.json
          * @param registry: 镜像源
          * @returns number, 为 0 即成功
          */
-        const installer: any = this.ctx.console.dependencies  // 获取 market 插件的 Installer
+        const installer = this.getMarket()
+        registry = registry ?? this.getMarketRegistry() ?? 'https://registry.npmjs.org/'  // 默认使用 installer(market) 的源
 
-        // let bot = null
-        // for (const i in this.ctx.bots) {
-        //     bot = this.ctx.bots[i]
-        // }
-        // for (const [key, value] of plugins) {
-        //     new KoishiSession(bot ?? {}).execute(`plugin.upgrade ${key.replace('koishi-plugin-', '')}`)
-        // }
-        // return 0
-
-        registry = registry ?? installer.registry ?? 'https://registry.npmjs.org/'  // 默认使用installer(market)的源
-        await installer.override(Object.create(plugins))  // 更新所有插件
+        const plugins = {}
+        plugins[pluginFullName] = targetVersion
+        await installer.override(plugins)  // 更新 pkg.json 插件
 
         const args: string[] = []
         const agent = which().name || 'npm'
@@ -90,39 +95,36 @@ export class Updater {
             logger.debug('start to install using market API')
             return await installer.exec(agent, args)
         }
-        return 0
+        return updateCode.success
     }
 
     public async update(pluginFullName: string, version: string, startUpdateCallback: Function): Promise<Array<any>> {
         /**
-         * @returns Array, [0] 为 statuCode, 0 => 安装成功; 1 => 当前是最新版本; -1 => 获取最新版本号错误; -2 -3 => 安装错误, 其中 -3 [1] 为 Error;
+         * @returns Array, [0] 为 statusCode, 0 => 安装成功; 1 => 当前是最新版本; -1 => 获取最新版本号错误; -2 -3 => 安装错误, 其中 -3 [1] 为 Error;
          */
         let latest: string = null
 
         try {
             latest = await this.getLatestVersion(pluginFullName)
         } catch (error) {
-            return [-1, error, 'get latest version error']
+            return [updateCode.getVersionError, error, 'get latest version error']
         }
 
         if (checkVersion(version, latest)) {
-            return [1, latest, 'is latest version']
+            return [updateCode.isLatest, latest, 'is latest version']
         }
 
         startUpdateCallback(version, latest)
-        const plugins = new Map()
-        plugins.set(pluginFullName, latest)
         try {
-            const status = await this.install(plugins, true)  // 安装
-            if (status != 0) {
-                plugins.set(pluginFullName, version)  // 回退到上一个版本
-                this.install(plugins, false)  // 仅更改 pkg.json 以免出现识别问题
-                return [-2, 'install error', 'see the log file']
+            const status = await this.install(pluginFullName, latest, true)  // 安装
+            if (status != updateCode.success) {
+                await this.install(pluginFullName, version, false)  // 回退到上一个版本, 仅更改 pkg.json 以免出现识别问题
+                return [updateCode.installFailedWithNpmOrYarnError, 'install error', 'see the log file']
             }
 
-            return [0, 'success', 'install successfully']
+            return [updateCode.success, 'success', 'install successfully']
         } catch (error) {
-            return [-3, error, 'install error']
+            return [updateCode.installFailedWithNodejsError, error, 'install error']
         }
     }
 
@@ -137,11 +139,11 @@ export class Updater {
             this.ctx.registry.delete(module)  // 删除模块
 
             require.cache[require.resolve(modulePath)] = undefined  // 删除模块缓存
-            setTimeout(async () => this.ctx.plugin(module), 0)  // 异步重载
+            this.ctx.plugin(module)  // 异步重载
 
-            return [0, 'success', 'reload successfully']
+            return [updateCode.success, 'success', 'reload successfully']
         } catch (error) {
-            return [-4, error, 'error']
+            return [updateCode.reloadFailed, error, 'error']
         }
     }
 }
@@ -198,29 +200,34 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
     }
 
     logger.debug('try to check update')
+    let _latest = null
+
+    const thisUpdateStatus: UpdateStatus = defaultUpdateStatus
+    thisUpdateStatus.updating = true
+    thisUpdateStatus.code = updateCode.updating
+    thisUpdateStatus.now = version
+    thisUpdateStatus.msg = 'preparing to update'
+    thisUpdateStatus.timestamp = new Date().getTime()
+    thisUpdateStatus.tried = latestUpdateStatus.tried
+
+    await statusWriter.write(thisUpdateStatus)
 
     const [statusCode, error, msg] = await updater.update(
         pluginFullName,
         version,
         async (version, latest) => {  // 开始更新显示信息
             logger.debug('start to update')
-            const status: UpdateStatus = {
-                updating: true,
-                code: updateCode.updating,
-                msg: 'start to update',
-                now: version,
-                latest: latest,
-                timestamp: new Date().getTime(),
-                tried: latestUpdateStatus.tried + 1
-            }
-            await statusWriter.write(status)
+            _latest = latest
+            thisUpdateStatus.msg = 'start to update'
+            thisUpdateStatus.latest = latest
+            thisUpdateStatus.timestamp = new Date().getTime()
+            thisUpdateStatus.tried += 1
+            await statusWriter.write(thisUpdateStatus)
         }
     )
 
-    const thisUpdateStatus: UpdateStatus = (await statusWriter.read()) ?? defaultUpdateStatus
     thisUpdateStatus.code = statusCode
     thisUpdateStatus.msg = msg
-    thisUpdateStatus.now = version
     if (statusCode === updateCode.isLatest) {
         thisUpdateStatus.timestamp = new Date().getTime()
         thisUpdateStatus.latest = error
@@ -236,7 +243,7 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
         }
         return  // 直接返回
     } else if (statusCode === updateCode.isLatest) {
-        logger.debug(`is the latest verison (${thisUpdateStatus.now} >= ${thisUpdateStatus.latest}), continue`)
+        logger.debug(`is the latest version (${thisUpdateStatus.now} >= ${thisUpdateStatus.latest}), continue`)
         return  // 最新版本直接返回
     }
 
@@ -245,35 +252,57 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
     thisUpdateStatus.updating = false
     await statusWriter.write(thisUpdateStatus)
 
-    updater.reload(indexFilename).then(  // then 避免 koishi 杀插件
-        async (array) => {
-            const [statusCode, error, msg] = array
 
-            thisUpdateStatus.code = statusCode
-            thisUpdateStatus.now = version
-            thisUpdateStatus.msg = msg
-            if (statusCode === updateCode.success) {
-                thisUpdateStatus.tried = 0  // 成功后失败次数清零
-            } else {
-                thisUpdateStatus.error = `${error.stack ?? error}`
-            }
+    // 下面是 market 安装成功 的 log 输出
+    // [I] market [4/4] Building fresh packages...
+    // [I] market success Saved lockfile
 
-            await statusWriter.write(thisUpdateStatus)
-            if (statusCode !== updateCode.success) {
-                logger.warn(`reload failed, ${error ?? msg}, more information => ${statusWriter.filename}`)
-                if (error) {
-                    logger.debug(error)
-                }
-            } else {
-                logger.info(`update success! ${thisUpdateStatus.now} => ${thisUpdateStatus.latest}`)
-            }
-        })
+    const intervalId = setInterval(async () => {
+        const filename = path.resolve(__dirname, '../../package.json')
+        const [status, info, msg] = await filesystem.readFile(filename, 'utf-8')
+        if (status !== 0) {
+            logger.debug(`read ${filename} error: ${info.stack ?? info}`)
+            return
+        }
+
+        const obj = JSON.parse(info)
+        if (obj && obj['version'] === _latest) {
+            clearInterval(intervalId)  // 清除自身
+
+            logger.debug('reload koishi')
+
+            updater.reload(indexFilename).then(  // then 避免 koishi 杀插件
+                async (array: Array<any>) => {
+                    const [statusCode, error, msg] = array
+
+                    thisUpdateStatus.code = statusCode
+                    thisUpdateStatus.now = version
+                    thisUpdateStatus.msg = msg
+                    if (statusCode === updateCode.success) {
+                        thisUpdateStatus.tried = 0  // 成功后失败次数清零
+                    } else {
+                        thisUpdateStatus.error = `${error.stack ?? error}`
+                    }
+
+                    await statusWriter.write(thisUpdateStatus)
+                    if (statusCode !== updateCode.success) {
+                        logger.warn(`reload failed, ${error ?? msg}, more information => ${statusWriter.filename}`)
+                        if (error) {
+                            logger.debug(error)
+                        }
+                    } else {
+                        logger.info(`update success! ${thisUpdateStatus.now} => ${thisUpdateStatus.latest}`)
+                    }
+                })
+            return
+        }
+
+        logger.debug(`installing, now version is ${obj['version']}`)
+    }, 1000)  // 实测 market 没有安装完成就会返回, 实时读取 pkg.json 获取版本号是否为最新版本
 }
 
-export function test(ctx: Context) {
+export async function test(ctx: Context) {
     const updater = new Updater(ctx)
 
-    const map = new Map()
-    map.set('koishi-plugin-genshin-gacha', 'latest')
-    updater.install(map)
+    updater.install('koishi-plugin-genshin-gacha', 'latest', true).then()
 }

@@ -4,14 +4,17 @@ import { Dict, Schema } from 'koishi'
 import * as path from 'path'
 import { } from '@koishijs/plugin-help'
 import { } from 'koishi-plugin-k-report'
+import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 
 import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
-import { reportWS, Context, Session, logger, updateStatusFilename, _ikunPluginFullName, packageJson, _resultPrefix  } from "./constants"
+import { reportWS, Context, Session, logger, updateStatusFilename,
+    _ikunPluginFullName,  _resultPrefix, packageJson } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
-import { update, Updater, UpdateStatusWriter } from './common/auto-update'
+import { update, Updater, UpdateStatusWriter, test } from './common/auto-update'
+import * as JSON from './common/json'
 
 export const using_disabled = ['kreport']
 export const using = ['console.dependencies']
@@ -346,14 +349,17 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
                     const value = commands[key]
                     // commands.pop(key)
                     // langDict['commands'][key] = undefined
-                    if (langDict['commands'] && langDict['commands'][key]) {
-                        langDict['commands'][key].description = langDict['commands'][key].usage = langDict['commands'][key].examples = undefined
+                    langDict['commands'][`${commandGroup}${key}`] = {
+                        description: `${value.description}`,
+                        usage: `${value.usage}`,
+                        examples: `${value.examples}`
                     }
 
-                    langDict['commands'][`${commandGroup}${key}`] = {
-                        description: value.description,
-                        usage: value.usage,
-                        examples: value.examples
+                    if (langDict['commands'] && langDict['commands'][key]) {
+                        delete langDict['commands'][key].description
+                        delete langDict['commands'][key].usage
+                        delete langDict['commands'][key].examples
+                        // langDict['commands'][key].description = langDict['commands'][key].usage = langDict['commands'][key].examples = undefined
                     }
                 }
             }
@@ -374,13 +380,16 @@ function registryLang(ctx: Context, langPreference: string, parentLang: string, 
             // commands.pop(key)
             // commands[key] = undefined
             if (commands['commands'] && commands['commands'][key]) {
-                commands['commands'][key].description = commands['commands'][key].usage = commands['commands'][key].examples = undefined
+                delete commands['commands'][key].description
+                delete commands['commands'][key].usage
+                delete commands['commands'][key].examples
+                // commands['commands'][key].description = commands['commands'][key].usage = commands['commands'][key].examples = undefined
             }
 
             commands[`${commandGroup}${key}`] = {
-                description: value.description,
-                usage: value.usage,
-                examples: value.examples
+                description: `${value.description}`,
+                usage: `${value.usage}`,
+                examples: `${value.examples}`
             }
         }
 
@@ -414,6 +423,11 @@ import * as ip from "./commands/ip";
 // )
 
 export async function apply(ctx: Context, config: Config) {
+    process.stdin.on("data", (_data) => {
+        const data = _data.toString().toUpperCase()
+        console.log('data', data)
+    })
+
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
@@ -421,26 +435,6 @@ export async function apply(ctx: Context, config: Config) {
 
     registryLang(ctx, config.zhLangPreference, 'zh', zhLangs, commandGroup)  // 注册中文系语言
     registryLang(ctx, config.enLangPreference, 'en', enLangs, commandGroup)  // 注册英文系语言
-
-    // const baseLang = require(baseLangFile)
-    // ctx.i18n.define('zh', baseLang)
-
-    // ctx.i18n.define('en', require('./locales/en-US'))
-
-    // baseLang.commands.ping.examples = 'ping youtube.com'
-    // baseLang.name = 'EN'
-    // ctx.i18n.define('en', baseLang)  // 英语
-    // baseLang.name = 'JA'
-    // ctx.i18n.define('ja', baseLang)  // 日语
-    // ctx.i18n.define('jp', baseLang)  // 日语
-    // baseLang.name = 'KR'
-    // ctx.i18n.define('kr', baseLang)  // 韩语
-    // baseLang.name = 'FR'
-    // ctx.i18n.define('fr', baseLang)  // 法语
-    // baseLang.name = 'RU'
-    // ctx.i18n.define('ru', baseLang)  // 俄语
-    // baseLang.name = 'SP'
-    // ctx.i18n.define('sp', baseLang)  // 西班牙语
 
     ctx.systools.http = ctx.http.extend({ timeout: config.axiosTimeout })  // 设置全局axios超时时间
 
@@ -473,10 +467,12 @@ export async function apply(ctx: Context, config: Config) {
     globalThis['systools']['updateInterval'] = setInterval(() => {
         update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)
     }, config.updateInterval)
-
-    const rootPkgJson = require(path.resolve(ctx.baseDir, 'package.json'))
+    
+    const rootPkgJson = JSON.parse(await fs.readFile(path.resolve(ctx.baseDir, 'package.json'), { encoding: 'utf-8' }))  // 不知道为什么直接 require 会炸
     const dependencies = rootPkgJson['dependencies'] ?? {}
     const resultPrefix = (dependencies[_ikunPluginFullName] && dependencies[_ikunPluginFullName].length > 0) ? _resultPrefix : ''  // 命令输出前缀
+
+    // test(ctx)
 
     ctx.command(`${commandGroup}ping <url:string>`)
         .action(async (obj, url) => {

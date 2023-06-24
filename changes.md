@@ -1,3 +1,9 @@
+# V0.1.1152-a
+1. fix: 安装过程中若发生错误导致 `update-status.runtime.json` 时间戳为 `0` 的 `feature`
+2. fix: 语言文件在开启命令组后格式错误 的问题
+3. fix: 因 `market API` 更改导致的自动更新失效 的问题
+4. fix: 应用更新时的重载不会等到 `market` 安装完成 的问题
+
 # V0.1.1151-a
 1. fix: `commandGroup` 不设置导致其为 `undefined` 无发获取 `length` 的问题
 

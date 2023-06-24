@@ -16,7 +16,7 @@ export async function ip(ctx: Context, { session: _session }) {
         const value = apis[api]
 
         try {
-            const { data } = await ctx.http.axios(api)
+            const { data } = await ctx.systools.http.axios(api)
             if (typeof data === 'object') {  // 如果 API 返回 JSON
                 ip = data
                 let valuePath = value.split('.')
@@ -37,7 +37,7 @@ export async function ip(ctx: Context, { session: _session }) {
                     // session.splitedSend(session.text('commands.ip.success', [`${ip}`]))
                     session.execute(`ping ${ip}`);
                     return
-                }   
+                }
             } else if (typeof data === 'string') {  // 如果 API 返回页面
                 if (value && value.length > 0) {  // 如果匹配字符不为空
                     ip = data.match(new RegExp(value, 'g'))  // 使用正则表达式
