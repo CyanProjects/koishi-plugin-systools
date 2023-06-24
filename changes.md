@@ -1,3 +1,6 @@
+# V0.1.1151-a
+1. fix: `commandGroup` 不设置导致其为 `undefined` 无发获取 `length` 的问题
+
 # V0.1.1150-a
 1. fix: 对命令进行分组并自定义描述 导致 `i18n` 路径不正确 的问题
 

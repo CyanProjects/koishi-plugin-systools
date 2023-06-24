@@ -417,7 +417,7 @@ export async function apply(ctx: Context, config: Config) {
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
-    const commandGroup = config.commandGroup.length > 0 ? `${config.commandGroup}.` : ''
+    const commandGroup = (config.commandGroup && config.commandGroup.length > 0) ? `${config.commandGroup}.` : ''
 
     registryLang(ctx, config.zhLangPreference, 'zh', zhLangs, commandGroup)  // 注册中文系语言
     registryLang(ctx, config.enLangPreference, 'en', enLangs, commandGroup)  // 注册英文系语言
