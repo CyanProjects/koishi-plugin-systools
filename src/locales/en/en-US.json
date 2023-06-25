@@ -44,6 +44,12 @@
             "examples": "ip",
             "failed": "IP got failed{0}",
             "notPrivate": "Configuration item \"ipPublic\" determines that this directive is not available to you in the current session. See the systools configuration item ipPublic for more details!"
+        },
+        "reload": {
+            "description": "systools: Reload koishi!",
+            "usage": "reload",
+            "examples": "reload",
+            "success": "Reload successfully!"
         }
     },
     "hooker": {

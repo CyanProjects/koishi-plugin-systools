@@ -44,6 +44,12 @@
             "examples": "ip",
             "failed": "IP 获取失败{0}",
             "notPrivate": "配置项 ipPublic 决定了您在当前会话中该指令不可用. 更多详情, 请参阅 systools 配置项 ipPublic"
+        },
+        "reload": {
+            "description": "systools: 重载您的 koishi!",
+            "usage": "reload",
+            "examples": "reload",
+            "success": "重载成功!"
         }
     },
     "hooker": {

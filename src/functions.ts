@@ -24,7 +24,7 @@ export async function report(pluginClient: PluginClient, ctx: Context, logger: L
 
 function sender(config: Config, text: string, session: Session, resultPrefix: string, delay: number = undefined) {
     if (config.sliceSize <= 0) {  // 不分割直接返回
-        return session.sendQueued(`${resultPrefix}${text}`)
+        return session.sendQueued(`${text}`)
     }
 
     let r: Promise<string[]> = null
@@ -35,15 +35,13 @@ function sender(config: Config, text: string, session: Session, resultPrefix: st
                 end = text.length  // 找不到下一行直接设置为最后
             }
             end += config.sliceSize
-            // session.sendQueued.call(this, `${resultPrefix}${text.slice(0, end)}`, ...args)
-            r = session.sendQueued(`${resultPrefix}${text.slice(0, end)}`, delay)
+            r = session.sendQueued(`${text.slice(0, end)}`, delay)
             text = text.slice(end + 1)
         }
         return r
     } else {  //  默认分割
         for (let i = 0; i < Math.ceil(text.length / config.sliceSize); i++) {
-            // session.sendQueued.call(this, t`${resultPrefix}${text.slice(config.sliceSize * i, config.sliceSize * (i + 1))}`, ...args)
-            r = session.sendQueued(`${resultPrefix}${text.slice(config.sliceSize * i, config.sliceSize * (i + 1))}`, delay)
+            r = session.sendQueued(`${text.slice(config.sliceSize * i, config.sliceSize * (i + 1))}`, delay)
         }
         return r
     }

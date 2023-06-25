@@ -266,10 +266,12 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
         }
 
         const obj = JSON.parse(info)
+
+        logger.debug(`installing...is waiting for ${obj['name']}'s package.json/version from ${obj['version']} change to ${_latest}`)
         if (obj && obj['version'] === _latest) {
             clearInterval(intervalId)  // 清除自身
 
-            logger.debug('reload koishi')
+            logger.debug('start to reload koishi')
 
             updater.reload(indexFilename).then(  // then 避免 koishi 杀插件
                 async (array: Array<any>) => {
@@ -296,8 +298,6 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
                 })
             return
         }
-
-        logger.debug(`installing, now version is ${obj['version']}`)
     }, 1000)  // 实测 market 没有安装完成就会返回, 实时读取 pkg.json 获取版本号是否为最新版本
 }
 

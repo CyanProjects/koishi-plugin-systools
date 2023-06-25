@@ -1,3 +1,8 @@
+# V0.1.1153-a
+1. change: 更新时等待 `package.json` 更新的 `debug` 日志
+2. fix: 本插件输出内容会受 `milk-ikun` 影响
+3. add: `reload` 指令 => 重载 `koishi`
+
 # V0.1.1152-a
 1. fix: 安装过程中若发生错误导致 `update-status.runtime.json` 时间戳为 `0` 的 `feature`
 2. fix: 语言文件在开启命令组后格式错误 的问题

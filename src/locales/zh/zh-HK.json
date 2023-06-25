@@ -44,11 +44,17 @@
             "examples": "ip",
             "failed": "IP 獲取失敗{0}",
             "notPrivate": "配置項 ipPublic 決定了您在當前會話中該指令不可用. 更多詳情, 請參閲 systools 配置項 ipPublic"
+        },
+        "reload": {
+            "description": "systools: 過載您的 koishi!",
+            "usage": "reload",
+            "examples": "reload",
+            "success": "過載成功!"
         }
     },
     "hooker": {
         "hookerError": "糟糕! hooker 錯誤, 為避免出現問題, 已結束執行",
-        "errorWithReported": "對不起, 我們的外挂程式遇到了些問題 :(\nKService 裝置唯一識別碼: {0}\n執行時錯誤: {1}\n已上報成功",
-        "errorWithoutReported": "對不起, 我們的外挂程式遇到了些問題 :(\nKService 裝置唯一識別碼: {0}\n執行時錯誤: {1}\n且上報錯誤: {2}"
+        "errorWithReported": "對不起, 我們的外掛程式遇到了些問題 :(\nKService 裝置唯一識別碼: {0}\n執行時錯誤: {1}\n已上報成功",
+        "errorWithoutReported": "對不起, 我們的外掛程式遇到了些問題 :(\nKService 裝置唯一識別碼: {0}\n執行時錯誤: {1}\n且上報錯誤: {2}"
     }
 }

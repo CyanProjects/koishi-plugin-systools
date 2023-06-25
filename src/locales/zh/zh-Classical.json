@@ -44,6 +44,12 @@
             "examples": "ip",
             "failed": "IP 取败{0}",
             "notPrivate": "置项 ipPublic，在今时中当教不可。更多详，请观 systools 置项 ipPublic"
+        },
+        "reload": {
+            "description": "systools: 重载公 koishi!",
+            "usage": "reload",
+            "examples": "reload",
+            "success": "重载成功!"
         }
     },
     "hooker": {

@@ -9,8 +9,10 @@ import * as os from 'node:os'
 
 import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
-import { reportWS, Context, Session, logger, updateStatusFilename,
-    _ikunPluginFullName,  _resultPrefix, packageJson } from "./constants"
+import {
+    reportWS, Context, Session, logger, updateStatusFilename,
+    _ikunPluginFullName, _resultKey, packageJson
+} from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
 import { update, Updater, UpdateStatusWriter, test } from './common/auto-update'
@@ -407,6 +409,7 @@ import * as exec from "./commands/exec";
 import * as sysinfo from "./commands/sysinfo";
 import * as shutdown from "./commands/shutdown";
 import * as ip from "./commands/ip";
+import * as reload from "./commands/reload";
 
 // hooker模板
 // return hooker(
@@ -467,10 +470,12 @@ export async function apply(ctx: Context, config: Config) {
     globalThis['systools']['updateInterval'] = setInterval(() => {
         update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)
     }, config.updateInterval)
-    
-    const rootPkgJson = JSON.parse(await fs.readFile(path.resolve(ctx.baseDir, 'package.json'), { encoding: 'utf-8' }))  // 不知道为什么直接 require 会炸
-    const dependencies = rootPkgJson['dependencies'] ?? {}
-    const resultPrefix = (dependencies[_ikunPluginFullName] && dependencies[_ikunPluginFullName].length > 0) ? _resultPrefix : ''  // 命令输出前缀
+
+    // const rootPkgJson = JSON.parse(await fs.readFile(path.resolve(ctx.baseDir, 'package.json'), { encoding: 'utf-8' }))  // 不知道为什么直接 require 会炸
+    // const dependencies = rootPkgJson['dependencies'] ?? {}
+    // const resultPrefix = (dependencies[_ikunPluginFullName] && dependencies[_ikunPluginFullName].length > 0) ? _resultKey : ''  // 命令输出前缀
+    const resultPrefix = ''
+    globalThis['systools']['__ikun'] = () => { return _resultKey }
 
     // test(ctx)
 
@@ -550,6 +555,22 @@ export async function apply(ctx: Context, config: Config) {
                 resultPrefix,
                 eventHooker,
                 ip.ip,
+                errorHooker,
+                ctx,
+                obj,
+            )
+        })
+
+    ctx.command(`${commandGroup}reload`, { authority: 4 })
+        .action(async (obj) => {
+            return hooker(
+                undefined,
+                config,
+                ctx,
+                logger,
+                resultPrefix,
+                eventHooker,
+                reload.reload,
                 errorHooker,
                 ctx,
                 obj,
