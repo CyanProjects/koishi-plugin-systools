@@ -20,7 +20,6 @@ export const changesMarkdown = path.resolve(__dirname, 'changes.md')
 
 export const packageJson = require('../package.json')
 
-export const _resultKey = '3b10c8071d8c147b01e487b08d4073394b2f55f55071f16487d50438f015603c-$systools_send$'
 export const _ikunPluginFullName = 'koishi-plugin-milk-ikun'
 
 export const updateStatusFilename = 'systools/update-status.runtime.json'

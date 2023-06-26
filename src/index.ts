@@ -11,7 +11,7 @@ import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
 import {
     reportWS, Context, Session, logger, updateStatusFilename,
-    _ikunPluginFullName, _resultKey, packageJson
+    _ikunPluginFullName, packageJson
 } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
@@ -58,12 +58,13 @@ function w() {
     if (globalThis['__systools-config-page-url'] === window.location.href) {
         let _navigation = document.getElementsByClassName('navigation')[0]
         if (_navigation && !document.getElementById('toConfigButton')) {
-            _navigation.setAttribute('id', 'top');
+            _navigation.setAttribute('id', 'topHurdle')
             _navigation.innerHTML = \`<a id='toConfigButton' class='k-button' target='_self' href='#end'>Systools: 转到配置</a>\` + _navigation.innerHTML
         }
         let kFilter = document.getElementsByClassName('k-filter')[0]
-        if (kFilter.firstElementChild && !document.getElementById('toTopButton')) {
+        if (kFilter && kFilter.firstElementChild && !document.getElementById('toTopButton')) {
             kFilter.firstElementChild.innerHTML = \`<a id='toTopButton' class='el-button' target='_self' href='#top'>Systools: 回到简介</a>\` + kFilter.firstElementChild.innerHTML
+            kFilter.firstElementChild.innerHTML = \`<a id='toTopHurdleButton' class='el-button' target='_self' href='#topHurdle'>Systools: 回到顶部</a>\` + kFilter.firstElementChild.innerHTML
         }
     }
 }
@@ -76,8 +77,10 @@ setInterval(w, 16)
 
 export let usage = `
 <div>
+<div id="top"></div>
 <p style="display: none;">$_{useChrome}</p>
 <div class="systools-usage">
+    <a id='usage-toConfigButton' class='k-button' target='_self' href='#end'>Systools: 转到配置</a>
     <h1 style="margin: 0; margin-bottom: 16px;">koishi-plugin-systools</h1>
     <h3 style="margin: 0; margin-bottom: 8px;">最新版本:
         <a target="_blank" href="https://www.npmjs.com/package/koishi-plugin-systools">
@@ -91,6 +94,7 @@ export let usage = `
 
 {updates}
 <!-- updates 不能缩进, 不然会被识别为代码块 -->
+<div id="end"></div>
 </div>
 </div>
 `
@@ -101,21 +105,21 @@ changesHandler.read(path.resolve(__dirname, '../changes.md')).then(async (text: 
     //     return checkVersion(a.version, b.version) ? 1 : 0
     // })  // 排序
 
-    // let result = '版本 | 更新内容\n:----: | :----\n'  // 左对齐 :---; 右对齐 ----:; 居中对齐 :----:;
-    // for (const i in changesInfos) {
-    //     const value = changesInfos[i]
-    //     const version = value.version.replace(/\n|\r\n/g, '<br>')  // 替换换行符
-    //     const data = value.data.split('\n').slice(1).join('\n').replace(/\n|\r\n/g, '<br>')  // 去除首行 + 替换换行符
-    //     result += `${version} | ${data}\n`
-    // }
-    let result = `${changesInfo.data ?? ''}
-<div id="end"></div>`
+    const changesInfos: Array<{ version: string, data: string }> = (await changesHandler.getUpdateInfos(text))
+    let result = '版本 | 更新内容\n:----: | :----\n'  // 左对齐 :---; 右对齐 ----:; 居中对齐 :----:;
+    for (const i in changesInfos) {
+        const value = changesInfos[i]
+        const version = value.version.replace(/\n|\r\n/g, '<br>')  // 替换换行符
+        const data = value.data.split('\n').slice(1).join('\n').replace(/\n|\r\n/g, '<br>')  // 去除首行 + 替换换行符
+        result += `${version} | ${data}\n`
+    }
+
     usage = usage.replace('{updates}', result)
 })
 
 export interface Config {
     // EUAL: boolean,
-    userCommandGroup: boolean,
+    useCommandGroup: boolean,
     commandGroup: string,
     commandGroupDesc: string,
     maxUpdateAttempts: number,
@@ -233,7 +237,7 @@ export const Config: Schema<Dict> = Schema.intersect([
         .hidden(true),
 
     Schema.object({
-        userCommandGroup: Schema.boolean()
+        useCommandGroup: Schema.boolean()
             .default(false)
             .description('是否启用命令分组'),
     })
@@ -243,7 +247,7 @@ export const Config: Schema<Dict> = Schema.intersect([
             userCommandGroup: Schema.const(true).required(),
             commandGroup: Schema.string()
                 .default('')
-                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*<br>注意: `i18n` 路径仍为 \<指令名\>, 而非 \<指令组名.指令名\>, 仅 `description` `usage` 和 `examples` 为 \<指令组名.指令名\>'),
+                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*<br>注意: `i18n` 路径仍为 \<指令名\>, 而非 \<指令组名/指令名\>, 仅 `description` `usage` 和 `examples` 为 \<指令组名/指令名\>'),
             commandGroupDesc: Schema.string()
                 .default('systools 支持指令组啦!')
                 .description('命令组的描述信息, 暂不支持对多语言适配'),
@@ -434,7 +438,7 @@ export async function apply(ctx: Context, config: Config) {
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
-    const commandGroup = (config.commandGroup && config.commandGroup.length > 0) ? `${config.commandGroup}.` : ''
+    const commandGroup = (config.useCommandGroup && config.commandGroup && config.commandGroup.length > 0) ? `${config.commandGroup}.` : ''
 
     registryLang(ctx, config.zhLangPreference, 'zh', zhLangs, commandGroup)  // 注册中文系语言
     registryLang(ctx, config.enLangPreference, 'en', enLangs, commandGroup)  // 注册英文系语言
@@ -475,7 +479,6 @@ export async function apply(ctx: Context, config: Config) {
     // const dependencies = rootPkgJson['dependencies'] ?? {}
     // const resultPrefix = (dependencies[_ikunPluginFullName] && dependencies[_ikunPluginFullName].length > 0) ? _resultKey : ''  // 命令输出前缀
     const resultPrefix = ''
-    globalThis['systools']['__ikun'] = () => { return _resultKey }
 
     // test(ctx)
 
