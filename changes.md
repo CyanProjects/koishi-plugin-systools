@@ -1,3 +1,9 @@
+# V0.1155-a
+1. change: 使用 `Global English` 取代 `American English` (in [index.ts](src/index.ts))
+2. add: `readme` 新增语言支持情况 (in [readme.md](readme.md#语言支持情况))
+3. fix: 语法错误 (in [shutdown.ts](src/commands/shutdown.ts))
+4. change: `ip` 指令群聊私聊判断方法 (in [ip.ts](src/commands/ip.ts))
+
 # V0.1.1154-a
 1. fix: 安装并启用本插件后若环境中安装并启用了 `milk-ikun` 会导致 `milk-ikun` 失效
 2. remove: 与 `milk-ikun` 的联动

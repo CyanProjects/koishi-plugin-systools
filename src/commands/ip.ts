@@ -5,7 +5,7 @@ import { Context, Session, logger } from "../constants";
 export async function ip(ctx: Context, { session: _session }) {
     const session: Session = _session
     // session.subtype !== 'private'
-    if (!ctx.config.ipPublic && !session.guildId) {
+    if (!ctx.config.ipPublic && (session.subtype === 'private' || !session.guildId)) {
         return session.text('commands.ip.notPrivate')  // 未启用 ipPublic (非私聊使用 ip 指令) 时直接返回不处理
     }
 

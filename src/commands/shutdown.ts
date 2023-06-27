@@ -3,15 +3,14 @@ import * as os from 'node:os'
 
 import { Context, Session, logger } from '../constants'
 
-interface _Sessions {
+interface shutdownEvent {
     status: boolean,
     session: Session,
     date: number,
     timeoutId: NodeJS.Timeout
 }
-type Sessions = _Sessions | undefined
 
-const sessions: Dict<Sessions> = {}
+const shutdownEvents: Dict<shutdownEvent | undefined> = {}
 
 export async function shutdown(ctx: Context, { session: _session }) {
     const session: Session = _session
@@ -21,14 +20,14 @@ export async function shutdown(ctx: Context, { session: _session }) {
         return session.text('commands.shutdown.undefinedUserId')
     }
 
-    const event = sessions[userId]
+    const event = shutdownEvents[userId]
     if (!event || !event.status) {
-        sessions[userId] = {
+        shutdownEvents[userId] = {
             status: true,
             session: session,
             date: new Date().getTime(),
             timeoutId: setTimeout(() => {  // 超时自动清除
-                sessions[userId] = undefined
+                shutdownEvents[userId] = undefined
                 session.splitedSend(session.text('commands.shutdown.delete'))
             }, ctx.config.shutdownTimeout)
         }
@@ -37,7 +36,7 @@ export async function shutdown(ctx: Context, { session: _session }) {
         return session.text('commands.shutdown.first', [ETA % 1 == 0 ? ETA : ETA.toFixed(3)])
     }
     clearTimeout(event.timeoutId)  // 关闭清除信息的timeout
-    sessions[userId] = undefined  // 手动清除
+    shutdownEvents[userId] = undefined  // 手动清除
 
     logger.info(`will shutdown in ${ctx.config.shutdownDelay} seconds`)
     session.splitedSend(session.text('commands.shutdown.shutdown'))

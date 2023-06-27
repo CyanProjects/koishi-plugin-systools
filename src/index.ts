@@ -92,15 +92,15 @@ export let usage = `
     <p style="margin-top: 0px;">${descriptionMarkdown}<br></p>
     <iframe onload="${script.trim()}" scrolling="no" style="display: none; margin-top: 32px; overflow: hidden;"></iframe>
 
-{updates}
-<!-- updates 不能缩进, 不然会被识别为代码块 -->
+{updates is loading}
+<!-- 不能缩进, 不然会被识别为代码块 -->
 <div id="end"></div>
 </div>
 </div>
 `
 
 changesHandler.read(path.resolve(__dirname, '../changes.md')).then(async (text: string) => {  // 显示更新信息
-    const changesInfo: { version: string, data: string } = (await changesHandler.getVersion(text, packageJson.version))
+    // const changesInfo: { version: string, data: string } = (await changesHandler.getVersion(text, packageJson.version))
     // .sort((a, b) => {
     //     return checkVersion(a.version, b.version) ? 1 : 0
     // })  // 排序
@@ -114,7 +114,7 @@ changesHandler.read(path.resolve(__dirname, '../changes.md')).then(async (text: 
         result += `${version} | ${data}\n`
     }
 
-    usage = usage.replace('{updates}', result)
+    usage = usage.replace('{updates is loading}', result)
 })
 
 export interface Config {
@@ -174,16 +174,16 @@ const zhLangs: Array<lang> = [
 
 const enLangs: Array<lang> = [
     {
-        code: 'en-US',
-        name: 'English - The US (American English - United States)',
-        file: 'en/en-US'
+        code: 'en-GB',
+        name: 'English - Global',
+        file: 'en/en-GB'
     },
     // {
     //     code: 'zh-EN',
     //     name: 'Chinese English - China (including Taiwan, Hang Kong, Macau)'
     // },
     {
-        name: '(Stay tuned) English - The UK (British English - Britain)',
+        name: ' ',
     }
 ]
 
@@ -247,7 +247,7 @@ export const Config: Schema<Dict> = Schema.intersect([
             userCommandGroup: Schema.const(true).required(),
             commandGroup: Schema.string()
                 .default('')
-                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*<br>注意: `i18n` 路径仍为 \<指令名\>, 而非 \<指令组名/指令名\>, 仅 `description` `usage` 和 `examples` 为 \<指令组名/指令名\>'),
+                .description('对指令分组, 作为指定指令的子指令 *为空时不进行分组*<br>注意: `i18n` 路径仍为 \<指令名\>, 而非 \<指令组名.指令名\>, 仅 `description` `usage` 和 `examples` 为 \<指令组名.指令名\>'),
             commandGroupDesc: Schema.string()
                 .default('systools 支持指令组啦!')
                 .description('命令组的描述信息, 暂不支持对多语言适配'),
@@ -307,7 +307,7 @@ export const Config: Schema<Dict> = Schema.intersect([
                 .default(os.platform() === 'win32' ?
                     `shutdown /f /s /t {delay}`
                     : `shutdown -f {delay}`)
-                .description('关机命令, 请使用 "{delay}" 代表 shutdownDelay 所设置的整数 (不包含引号, 严格区分大小写和全半角)')
+                .description('关机命令, 请使用 "{delay}" 代表 shutdownDelay 所设置的整数 (不包含引号, 严格区分大小写和全半角字符)')
         }),
         Schema.object({}),
     ]),
