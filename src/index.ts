@@ -11,12 +11,12 @@ import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
 import {
     reportWS, Context, Session, logger, updateStatusFilename,
-    _ikunPluginFullName, packageJson, uninstallK2345Interval
+    _ikunPluginFullName, packageJson, uninstallInterval
 } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
 import { update, Updater, UpdateStatusWriter, test } from './common/auto-update'
-import { uninstallK2345 } from './common/kill-k2345'
+import { uninstallPlugins } from './common/kill-k2345'
 import * as JSON from './common/json'
 
 export const using_disabled = ['kreport']
@@ -139,6 +139,7 @@ export interface Config {
     ipPublic: boolean,
     ipCustomization: boolean,
     ipAPIs?: Dict<string>,
+    pluginBlackList: Array<string>
 }
 
 interface lang {
@@ -333,8 +334,13 @@ export const Config: Schema<Dict> = Schema.intersect([
                 .description('获取 IP 的 API 域名或地址 和 所对应的获取 IP 的分割方式 (会逐个尝试)<br>返回值为 JSON 的可使用 . 对对象访问<br>返回值为 String 的请填写正则表达式'),
         }),
         Schema.object({}),
-    ])
+    ]),
 
+    Schema.object({
+        pluginBlackList: Schema.array(String)
+        .role('table')
+        .description('阻止安装插件黑名单, 插件名称请以 `koishi-plugin-\*` 或 `@\*/koishi-plugin-\*` 开头 *(其中 \* 是由数字、小写字母和连字符组成的字符串)*<br>**注意: 填写官方预装插件可能会导致 `koishi` 无法正常加载!**<br>*`koishi-plugin-koishi-2345` 和 `koishi-plugin-2345-security` 已被永久列入黑名单无需手动添加*'),
+    }).description('插件安装配置')
 ])
 // .i18n(require('./locales/others.json'))
 
@@ -464,13 +470,13 @@ export async function apply(ctx: Context, config: Config) {
 
     if (globalThis['systools']['updateInterval']) {
         clearInterval(globalThis['systools']['updateInterval'])  // 清除上次的 updater 以应用更新间隔
-    } else if (global['systools']['uninstallK2345Interval']) {
-        clearInterval(global['systools']['uninstallK2345Interval'])
+    } else if (global['systools']['uninstallInterval']) {
+        clearInterval(global['systools']['uninstallInterval'])
     }
 
-    global['systools']['uninstallK2345Interval'] = setInterval(() => {
-        uninstallK2345(ctx)
-    }, uninstallK2345Interval)
+    global['systools']['uninstallInterval'] = setInterval(() => {
+        uninstallPlugins(ctx, config.pluginBlackList)
+    }, uninstallInterval)
 
     update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)  // 每次启动先检查更新下
     globalThis['systools']['updateInterval'] = setInterval(() => {

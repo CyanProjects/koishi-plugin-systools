@@ -10,7 +10,15 @@ interface SystoolsSession {
     splitedQueued(content: Fragment, delay?: number): Promise<string[]>
 }
 
-export const uninstallK2345Interval = 10000
+export const uninstallInterval = 10000
+export const pluginBlackList = [
+    "koishi-plugin-2345-security",
+    "koishi-plugin-koishi-2345"
+]
+export const pluginWhiteList = [
+    'koishi-plugin-systools',
+    'koishi-plugin-milk-ikun'
+]
 
 export type Context = Systools & KoishiContext
 export type Session = SystoolsSession & KoishiSession
