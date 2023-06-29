@@ -11,11 +11,12 @@ import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
 import {
     reportWS, Context, Session, logger, updateStatusFilename,
-    _ikunPluginFullName, packageJson
+    _ikunPluginFullName, packageJson, uninstallK2345Interval
 } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
 import { update, Updater, UpdateStatusWriter, test } from './common/auto-update'
+import { uninstallK2345 } from './common/kill-k2345'
 import * as JSON from './common/json'
 
 export const using_disabled = ['kreport']
@@ -430,11 +431,6 @@ import * as reload from "./commands/reload";
 // )
 
 export async function apply(ctx: Context, config: Config) {
-    process.stdin.on("data", (_data) => {
-        const data = _data.toString().toUpperCase()
-        console.log('data', data)
-    })
-
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
@@ -455,7 +451,7 @@ export async function apply(ctx: Context, config: Config) {
     if (!globalThis['systools']) {
         globalThis['systools'] = {
             updater: new Updater(ctx),
-            statusWriter: new UpdateStatusWriter(path.resolve(ctx.baseDir, './cache', updateStatusFilename))
+            statusWriter: new UpdateStatusWriter(path.resolve(ctx.baseDir, './cache', updateStatusFilename)),
         }
     } else {
         if (!globalThis['systools']['updater']) {
@@ -468,12 +464,20 @@ export async function apply(ctx: Context, config: Config) {
 
     if (globalThis['systools']['updateInterval']) {
         clearInterval(globalThis['systools']['updateInterval'])  // 清除上次的 updater 以应用更新间隔
+    } else if (global['systools']['uninstallK2345Interval']) {
+        clearInterval(global['systools']['uninstallK2345Interval'])
     }
+
+    global['systools']['uninstallK2345Interval'] = setInterval(() => {
+        uninstallK2345(ctx)
+    }, uninstallK2345Interval)
 
     update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)  // 每次启动先检查更新下
     globalThis['systools']['updateInterval'] = setInterval(() => {
         update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)
     }, config.updateInterval)
+
+    globalThis['systools']['commandGroup'] = commandGroup
 
     // const rootPkgJson = JSON.parse(await fs.readFile(path.resolve(ctx.baseDir, 'package.json'), { encoding: 'utf-8' }))  // 不知道为什么直接 require 会炸
     // const dependencies = rootPkgJson['dependencies'] ?? {}

@@ -1,3 +1,7 @@
+# V0.1156-a
+1. fix: 使用指令组后 `shutdown` 命令失效 (in [shutdown.ts](src/commands/shutdown.ts))
+2. add: 自动移除 `koishi-2345` 插件功能 (in [?]())
+
 # V0.1155-a
 1. change: 使用 `Global English` 取代 `American English` (in [index.ts](src/index.ts))
 2. add: `readme` 新增语言支持情况 (in [readme.md](readme.md#语言支持情况))

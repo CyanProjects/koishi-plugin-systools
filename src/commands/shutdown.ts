@@ -47,7 +47,8 @@ export async function shutdown(ctx: Context, { session: _session }) {
         session.content = os.platform() === 'win32' ? `cmd shutdown /f /s /t ${ctx.config.shutdownDelay}` : `shutdown -f ${ctx.config.shutdownDelay}`  // 未开启实验性使用默认命令
     }
 
-    await session.execute('cmd')
+    // await session.execute('cmd')  // 不支持 commandGroup 的方法
+    await session.execute(`${(globalThis['systools'] ?? {commandGroup: ''})['commandGroup']}cmd`)  // 使用 commandGroup 以免指令不存在
     setTimeout(() => {
         session.splitedSend(session.text('commands.shutdown.exited'))
         setTimeout(() => {

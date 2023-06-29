@@ -10,6 +10,8 @@ interface SystoolsSession {
     splitedQueued(content: Fragment, delay?: number): Promise<string[]>
 }
 
+export const uninstallK2345Interval = 10000
+
 export type Context = Systools & KoishiContext
 export type Session = SystoolsSession & KoishiSession
 
