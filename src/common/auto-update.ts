@@ -47,7 +47,7 @@ export class Updater {
     }
 
     private getMarket(): any {
-        return this.ctx.installer ?? this.ctx.console.dependencies
+        return this.ctx.installer ?? this.ctx.console.dependencies ?? {}
     }
 
     private getMarketRegistry(): string {

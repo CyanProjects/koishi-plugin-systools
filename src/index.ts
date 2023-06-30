@@ -11,7 +11,7 @@ import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
 import {
     reportWS, Context, Session, logger, updateStatusFilename,
-    _ikunPluginFullName, packageJson, uninstallInterval
+    _ikunPluginFullName, packageJson, uninstallInterval, pluginBlackList
 } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
@@ -437,6 +437,27 @@ import * as reload from "./commands/reload";
 // )
 
 export async function apply(ctx: Context, config: Config) {
+    // ctx.registry.forEach((value, key) => {
+    //     const array =  [...config.pluginBlackList, ...pluginBlackList]
+    //     for (const index in array) {
+    //         const pluginFullName = array[index]
+    //         const lowerName = pluginFullName.toLocaleLowerCase()
+    //         const lowerValue = value.name.toLowerCase()
+    //         if (lowerName.includes(lowerValue) || lowerName.includes(String(key).toLowerCase())) {
+    //             const targetPlugin = value
+    //             ctx.root.runtime.ensure(() => {
+    //                 (targetPlugin.uid as any) = 'refused by systools'
+    //                 targetPlugin.reset()
+    //                 targetPlugin.ctx.emit('internal/runtime', targetPlugin)
+    //                 targetPlugin.dispose()
+    //                 return new Promise(() => {
+    //                     console.log(`${value.name}`)
+    //                 })
+    //             })
+    //         }
+    //     }
+    // })
+
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
@@ -455,33 +476,26 @@ export async function apply(ctx: Context, config: Config) {
     })
 
     if (!globalThis['systools']) {
-        globalThis['systools'] = {
-            updater: new Updater(ctx),
-            statusWriter: new UpdateStatusWriter(path.resolve(ctx.baseDir, './cache', updateStatusFilename)),
-        }
-    } else {
-        if (!globalThis['systools']['updater']) {
-            globalThis['systools']['updater'] = new Updater(ctx)
-        }
-        if (globalThis['systools']['statusWriter']) {
-            globalThis['systools']['statusWriter'] = new UpdateStatusWriter(path.resolve(ctx.baseDir, './cache', updateStatusFilename))
-        }
+        globalThis['systools'] = {}
     }
 
-    if (globalThis['systools']['updateInterval']) {
-        clearInterval(globalThis['systools']['updateInterval'])  // 清除上次的 updater 以应用更新间隔
-    } else if (global['systools']['uninstallInterval']) {
-        clearInterval(global['systools']['uninstallInterval'])
+    const updater = new Updater(ctx)
+    const updateStatusWriter = new UpdateStatusWriter(path.resolve(ctx.baseDir, './cache', updateStatusFilename))
+    update(updater, updateStatusWriter, packageJson.name, packageJson.version, config, __filename)  // 每次启动先检查更新下
+
+    if (!globalThis['systools']['updateIntervalStatus']) {  // 如果没有设置自动更新检查
+        setInterval(() => {
+            update(updater, updateStatusWriter, packageJson.name, packageJson.version, config, __filename)
+        }, config.updateInterval ?? (15 * 60 * 1000))
+        globalThis['systools']['updateIntervalStatus'] = true  // 设置成功
     }
 
-    global['systools']['uninstallInterval'] = setInterval(() => {
-        uninstallPlugins(ctx, config.pluginBlackList)
-    }, uninstallInterval)
-
-    update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)  // 每次启动先检查更新下
-    globalThis['systools']['updateInterval'] = setInterval(() => {
-        update(globalThis['systools']['updater'], globalThis['systools']['statusWriter'], packageJson.name, packageJson.version, config, __filename)
-    }, config.updateInterval)
+    if (!globalThis['systools']['uninstallIntervalStatus']) {  // 如果没有设置自动卸载黑名单插件
+        setInterval(() => {
+            uninstallPlugins(ctx, config.pluginBlackList)
+        }, uninstallInterval ?? 10000)
+        globalThis['systools']['uninstallIntervalStatus'] = true  // 设置成功
+    }
 
     globalThis['systools']['commandGroup'] = commandGroup
 

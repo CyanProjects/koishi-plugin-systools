@@ -37,6 +37,6 @@ export async function uninstallPlugins(ctx: Context, blackList: Array<string> = 
     }
 
     if (!status) {
-        logger.debug('black plugins has not installed')
+        logger.debug('the plugin which is in your blacklist is not installed')
     }
 }
