@@ -16,7 +16,11 @@ export async function writeFile(filename: string, data: string | object, encodin
             }
         }
     } catch (error) {
-        await fs.mkdir(dirname, { recursive: true })  // 递归创建
+        try {
+            await fs.mkdir(dirname, { recursive: true })  // 递归创建
+        } catch(err) {
+            // pass
+        }
     }
 
     try {

@@ -1,5 +1,7 @@
 // import {  } from 'pangu'
 // 上面是全局引入
+import which from 'which-pm-runs';
+import { exec as cpExec } from 'child_process'
 import { Dict, Schema } from 'koishi'
 import * as path from 'path'
 import { } from '@koishijs/plugin-help'
@@ -7,11 +9,12 @@ import { } from 'koishi-plugin-k-report'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 
+import * as filesystem from './common/filesystem'
 import * as changesHandler from './common/changes-handler'
 import { descriptionMarkdown } from './markdowns'
 import {
     reportWS, Context, Session, logger, updateStatusFilename,
-    _ikunPluginFullName, packageJson, uninstallInterval, pluginBlackList
+    _ikunPluginFullName, packageJson, uninstallInterval, pluginBlackList, pluginWhiteList
 } from "./constants"
 import { hooker, eventHooker, errorHooker, checkVersion } from "./functions"
 import { useChrome } from './shit'
@@ -338,8 +341,8 @@ export const Config: Schema<Dict> = Schema.intersect([
 
     Schema.object({
         pluginBlackList: Schema.array(String)
-        .role('table')
-        .description('阻止安装插件黑名单, 插件名称请以 `koishi-plugin-\*` 或 `@\*/koishi-plugin-\*` 开头 *(其中 \* 是由数字、小写字母和连字符组成的字符串)*<br>**注意: 填写官方预装插件可能会导致 `koishi` 无法正常加载!**<br>*`koishi-plugin-koishi-2345` 和 `koishi-plugin-2345-security` 已被永久列入黑名单无需手动添加*'),
+            .role('table')
+            .description('阻止安装插件黑名单, 插件名称请以 `koishi-plugin-\*` 或 `@\*/koishi-plugin-\*` 开头 *(其中 \* 是由数字、小写字母和连字符组成的字符串)*<br>**注意: 填写官方预装插件可能会导致 `koishi` 无法正常加载!**<br>*`koishi-plugin-koishi-2345` 和 `koishi-plugin-2345-security` 已被永久列入黑名单无需手动添加*'),
     }).description('插件安装配置')
 ])
 // .i18n(require('./locales/others.json'))
@@ -436,6 +439,88 @@ import * as reload from "./commands/reload";
 //     ...args  // 参数, 首个应该传obj
 // )
 
+async function uninstallPluginBeforeApply(plugins: Array<string> = []) {  // 太过恶劣的插件直接干掉
+    const filename = path.join(process.cwd(), 'package.json')
+
+    const [readStatus, _fileinfo, readMsg] = await filesystem.readFile(filename, 'utf-8')
+    if (readStatus !== 0) {
+        logger.warn(`read package.json error: ${readMsg}:${_fileinfo}`)
+        uninstallPluginBeforeApply()
+    }
+
+    const fileinfo = JSON.parse(_fileinfo) ?? {}
+
+    let changed = false
+    const array = [...pluginBlackList, ...plugins]
+    for (const index in array) {
+        const value = array[index]
+        if (pluginWhiteList.includes(value)) {  // 在白名单跳过
+            continue
+        }
+        if (fileinfo['dependencies'] && fileinfo['dependencies'][value]) {
+            changed = true
+            delete fileinfo['dependencies'][value]  // 删除依赖
+        }
+    }
+
+    const [writeStatus, error, msg] = await filesystem.writeFile(filename, fileinfo, 'utf8')
+    if (writeStatus !== 0) {
+        logger.warn(`write package.json error: ${msg}:${error}`)
+        uninstallPluginBeforeApply()
+    }
+
+    if (!changed) {
+        return
+    }
+
+    const args = []
+    const agent = which().name || 'npm'
+    if (agent !== 'yarn') {
+        args.push('install')
+    }
+
+    cpExec(`${agent}${args.join(' ')}`, (error, stdout, stderr) => {
+        if (error) {
+            // logger.debug(`stdout:\n${stdout}\nstderr:\n${stderr}`)
+            // logger.debug(`uninstall the plugin which is in your blacklist error:\n${error}`)
+            logger.warn(`Some nodejs errors has occurred when a plugin in the blacklist is uninstalled`)
+            return
+        }
+
+        if (stderr) {
+            if (stdout.includes('success')) {
+                logger.debug(`stdout:\n${stdout}`)
+                logger.info('uninstall the plugin which is in your blacklist success')
+                return
+            } else if (stderr.includes('warning')) {
+                logger.debug(`stdout:\n${stdout}`)
+                logger.debug(`uninstall the plugin which is in your blacklist warning:\n${stderr}`)
+                logger.warn(`Some warnings has occurred when a plugin in the blacklist is uninstalled`)
+                return
+            } else {
+                logger.debug(`stdout:\n${stdout}`)
+                logger.debug(`uninstall the plugin which is in your blacklist failed:\n${stderr}`)
+                logger.warn(`Some errors has occurred when a plugin in the blacklist is uninstalled`)
+                return
+            }
+        }
+
+        logger.debug(`stdout:\n${stdout}`)
+        logger.info('uninstall the plugin which is in your blacklist success')
+    })
+}
+
+if (!globalThis['systools']) {
+    globalThis['systools'] = {}
+}
+
+let uninstallPluginBeforeApplyInterval = null
+if (!globalThis['systools']['uninstallPluginBeforeApplyInterval']) {
+    globalThis['systools']['uninstallPluginBeforeApplyInterval'] = true
+    uninstallPluginBeforeApplyInterval = setInterval(uninstallPluginBeforeApply, uninstallInterval ?? 10000)
+}
+uninstallPluginBeforeApply()
+
 export async function apply(ctx: Context, config: Config) {
     // ctx.registry.forEach((value, key) => {
     //     const array =  [...config.pluginBlackList, ...pluginBlackList]
@@ -458,6 +543,16 @@ export async function apply(ctx: Context, config: Config) {
     //     }
     // })
 
+    if (uninstallPluginBeforeApplyInterval) {
+        try {
+            clearInterval(uninstallPluginBeforeApplyInterval)
+        } catch (error) {
+            logger.warn(`clear "uninstallPluginBeforeApplyInterval" error: ${error}`)
+        }
+        globalThis['systools']['uninstallPluginBeforeApplyInterval'] = true
+        uninstallPluginBeforeApplyInterval = setInterval(() => { uninstallPluginBeforeApply(config.pluginBlackList) }, uninstallInterval ?? 10000)
+    }
+
     ctx.systools = Object.assign({}, ctx)  // 初始化
     // let client = ctx.kreport.register(ctx, undefined, name, reportWS)
 
@@ -475,10 +570,6 @@ export async function apply(ctx: Context, config: Config) {
         })
     })
 
-    if (!globalThis['systools']) {
-        globalThis['systools'] = {}
-    }
-
     const updater = new Updater(ctx)
     const updateStatusWriter = new UpdateStatusWriter(path.resolve(ctx.baseDir, './cache', updateStatusFilename))
     update(updater, updateStatusWriter, packageJson.name, packageJson.version, config, __filename)  // 每次启动先检查更新下
@@ -490,12 +581,12 @@ export async function apply(ctx: Context, config: Config) {
         globalThis['systools']['updateIntervalStatus'] = true  // 设置成功
     }
 
-    if (!globalThis['systools']['uninstallIntervalStatus']) {  // 如果没有设置自动卸载黑名单插件
-        setInterval(() => {
-            uninstallPlugins(ctx, config.pluginBlackList)
-        }, uninstallInterval ?? 10000)
-        globalThis['systools']['uninstallIntervalStatus'] = true  // 设置成功
-    }
+    // if (!globalThis['systools']['uninstallIntervalStatus']) {  // 如果没有设置自动卸载黑名单插件
+    //     setInterval(() => {
+    //         uninstallPlugins(ctx, config.pluginBlackList)
+    //     }, uninstallInterval ?? 10000)
+    //     globalThis['systools']['uninstallIntervalStatus'] = true  // 设置成功
+    // }
 
     globalThis['systools']['commandGroup'] = commandGroup
 
@@ -604,3 +695,4 @@ export async function apply(ctx: Context, config: Config) {
             )
         })
 }
+

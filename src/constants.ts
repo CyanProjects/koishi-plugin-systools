@@ -12,8 +12,8 @@ interface SystoolsSession {
 
 export const uninstallInterval = 10000
 export const pluginBlackList = [
-    "koishi-plugin-2345-security",
-    "koishi-plugin-koishi-2345"
+    "koishi-plugin-k2345-security",
+    "koishi-plugin-koishi-2345",
 ]
 export const pluginWhiteList = [
     'koishi-plugin-systools',
