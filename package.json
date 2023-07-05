@@ -1,7 +1,7 @@
 {
     "name": "koishi-plugin-systools",
     "description": "系统助手 - 支持运行系统命令、查询系统状态、关机系统或框架和查询 IP 地址",
-    "version": "0.1.1159-a",
+    "version": "0.1.1160-a",
     "main": "lib/index.js",
     "typings": "lib/index.d.ts",
     "files": [
@@ -43,8 +43,8 @@
     },
     "koishi": {
         "description": {
-            "zh": "系统助手 - 支持运行系统命令、查询系统状态、关机系统或框架和查询 IP 地址",
-            "en": "Systools - Run system command, get system information, shutdown your device or get your ip address."
+            "zh": "系统助手 - 支持运行系统命令、查询系统状态、关机系统或框架和查询 IP 地址<br>**注意: 安装本插件会卸载`koishi-plugin-koishi-2345` 和 `koishi-plugin-2345-security`**",
+            "en": "Systools - Run system command, get system information, shutdown your device or get your ip address.<br>**Warning: Installing this plugin uninstalls `koishi-plugin-koishi-2345` and `koishi-plugin-2345-security` **"
         },
         "service": {
             "required.disabled": [

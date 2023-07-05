@@ -1,6 +1,11 @@
+# V0.1.1160-a
+1. fix & change: `en-GB ( English - Global )` => `en-GB ( English - Great Britain )`
+2. change: `zh-CLS` => `zh-Classical`
+3. add: 在插件 `description` 中提示用户会卸载如下恶意/不安全插件: `koishi-plugin-koishi-2345`, `koishi-plugin-2345-security`
+
 # V0.1.1159-a
-1. 防护新升级! 针对故意干扰本插件执行防护措施的执行特殊卸载操作, 以免感染本插件防护能力
-2. fix: 写入临时文件可能重新错误
+1. 防护新升级! 针对故意干扰本插件执行防护措施的执行特殊卸载操作, 以免干扰本插件防护能力
+2. fix: 写入临时文件可能遇到错误
 3. fix: `k2345-security` 插件包名错误
 
 # V0.1.1158-a

@@ -8,6 +8,7 @@ import { } from '@koishijs/plugin-help'
 import { } from 'koishi-plugin-k-report'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
+// import { useConfig } from '@koishijs/client'
 
 import * as filesystem from './common/filesystem'
 import * as changesHandler from './common/changes-handler'
@@ -21,6 +22,10 @@ import { useChrome } from './shit'
 import { update, Updater, UpdateStatusWriter, test } from './common/auto-update'
 import { uninstallPlugins } from './common/kill-k2345'
 import * as JSON from './common/json'
+
+// const koishiConfig = useConfig()
+// logger.debug(koishiConfig.loacle)
+// logger.debug(process.env.KOISHI_ENV)
 
 export const using_disabled = ['kreport']
 export const using = ['console.dependencies']
@@ -92,8 +97,8 @@ export let usage = `
         </a>
     </h3>
     <h4 style="margin: 0; margin-top: 8px;">海内存知己, 天涯若比邻! 插件即刻即可使用!</h4>
-    <h4 style="margin: 0; margin-top: 0;">有问题可以向 <a href="mailto:public.zhuhansan666@outlook.com">public.zhuhansan666@outlook.com</a> 反馈!</h4>
-    <p style="margin-top: 0px;">${descriptionMarkdown}<br></p>
+    <h4 style="margin: 0; margin-top: 0;">有问题可以向 <a href="mailto:zhuhansan666@outlook.com">zhuhansan666@outlook.com</a> 反馈!</h4>
+    <p style="margin-top: 16px; margin-bottom: 16px; ">${descriptionMarkdown}<br></p>
     <iframe onload="${script.trim()}" scrolling="no" style="display: none; margin-top: 32px; overflow: hidden;"></iframe>
 
 {updates is loading}
@@ -171,7 +176,7 @@ const zhLangs: Array<lang> = [
     //     name: '敬请期待 繁体中文 - 中国澳门 (Traditional Chinese - Macau, China)',
     // },
     {
-        code: 'zh-CLS',
+        code: 'zh-Classical',
         name: '#教程不详细, 翻译不准确# 文言 - 华夏 (Classical Chinese - Huaxia[An ancient name for China])',
         file: 'zh/zh-Classical'
     }
@@ -180,7 +185,7 @@ const zhLangs: Array<lang> = [
 const enLangs: Array<lang> = [
     {
         code: 'en-GB',
-        name: 'English - Global',
+        name: 'English - Great Britain',
         file: 'en/en-GB'
     },
     // {
