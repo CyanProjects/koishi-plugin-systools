@@ -133,15 +133,10 @@ export class Updater {
         /**
          * @param filename: index.ts/js 的文件路径
          */
+        
         try {
             // let modulePath = path.join(__dirname, `./index${path.extname(__filename)}`)
-            let modulePath = filename
-            let module = require(modulePath)  // 引入模块
-            this.ctx.registry.delete(module)  // 删除模块
-
-            require.cache[require.resolve(modulePath)] = undefined  // 删除模块缓存
-            this.ctx.plugin(module)  // 异步重载
-
+            
             return [updateCode.success, 'success', 'reload successfully']
         } catch (error) {
             return [updateCode.reloadFailed, error, 'error']
@@ -156,7 +151,7 @@ export class UpdateStatusWriter {
     }
 
     public async write(data: UpdateStatus, encoding: BufferEncoding = 'utf-8') {
-        return filesystem.writeFile(this.filename, data, encoding)
+       // return filesystem.writeFile(this.filename, data, encoding)
     }
 
     public async read(encoding: BufferEncoding = 'utf-8') {
@@ -180,6 +175,8 @@ export async function update(updater: Updater, statusWriter: UpdateStatusWriter,
     /**
      * @param force: 强制更新, 不校验是否处于合法更新条件
      */
+	return
+    
     const latestUpdateStatus: UpdateStatus = (await statusWriter.read()) ?? defaultUpdateStatus
 
     if (
