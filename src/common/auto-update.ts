@@ -93,7 +93,8 @@ export class Updater {
 
         if (install) {
             logger.debug('start to install using market API')
-            return await installer.exec(agent, args)
+            //return await installer.exec(agent, args)
+            return 0
         }
         return updateCode.success
     }
